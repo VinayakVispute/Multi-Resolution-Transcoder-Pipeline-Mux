@@ -56,7 +56,6 @@ function delay(ms: number) {
 function decodedMessageText(messageText: string) {
   try {
     const response = Buffer.from(messageText, "base64").toString("utf-8");
-    console.log("decodedMessageText =>", response);
     return JSON.parse(response);
   } catch (error) {
     console.error("Failed to decode message text:", error);
@@ -72,11 +71,13 @@ async function checkContainerGroupStatus(
       AZURE_RESOURCE_GROUP || "",
       containerGroupName
     );
-    console.log(`Container group status: ${containerGroup.provisioningState}`);
+    console.log(
+      `Container group: ${containerGroupName} - Status: ${containerGroup.containers[0].instanceView?.currentState?.state}`
+    );
     return containerGroup;
   } catch (error: any) {
     if (error.statusCode === 404) {
-      console.log("Container group not found, it may not exist.");
+      console.log(`Container group ${containerGroupName} not found.`);
       return null;
     }
     console.error("Error checking container group status:", error);
@@ -84,7 +85,13 @@ async function checkContainerGroupStatus(
   }
 }
 
-async function spinUpContainer(blobName: string, containerSuffix: string) {
+async function spinUpContainer(
+  blobName: string,
+  containerSuffix: string,
+  containerCounter: number,
+  messageId: string,
+  popReceipt: string
+) {
   try {
     const containerGroupName = `${CONTAINER_GROUP_NAME}-${containerSuffix}`;
     const existingContainerGroup = await checkContainerGroupStatus(
@@ -93,26 +100,44 @@ async function spinUpContainer(blobName: string, containerSuffix: string) {
 
     if (
       existingContainerGroup &&
-      existingContainerGroup.provisioningState === "Succeeded"
+      (existingContainerGroup.containers[0].instanceView?.currentState
+        ?.state === "Running" ||
+        existingContainerGroup.containers[0].instanceView?.currentState
+          ?.state === "Waiting")
     ) {
       console.log(`Container group ${containerGroupName} is already running.`);
       return;
     }
 
-    console.log(
-      `Spinning up the Azure Container Instance: ${containerGroupName}`
-    );
+    if (
+      existingContainerGroup &&
+      existingContainerGroup.containers[0].instanceView?.currentState?.state ===
+        "Terminated"
+    ) {
+      console.log(
+        `Container group ${CONTAINER_NAME}-${containerCounter} has terminated. Restarting...`
+      );
+    } else {
+      console.log(
+        `Starting container group: ${CONTAINER_NAME}-${containerCounter}`
+      );
+    }
+    if (!AZURE_RESOURCE_GROUP) {
+      console.error("Resource group is not defined");
+      throw new Error("Resource group is not defined");
+    }
 
     const containerGroup =
       await client.containerGroups.beginCreateOrUpdateAndWait(
-        AZURE_RESOURCE_GROUP || "",
-        containerGroupName || "",
+        AZURE_RESOURCE_GROUP,
+        containerGroupName,
         {
           location: "eastus",
           osType: "Linux",
           containers: [
             {
-              name: CONTAINER_NAME || "video-processor",
+              name:
+                `${CONTAINER_NAME}-${containerCounter}` || "video-processor",
               image: `${AZURE_CONTAINER_REGISTRY_SERVER}/${CONTAINER_NAME}:latest`,
               resources: {
                 requests: {
@@ -142,16 +167,23 @@ async function spinUpContainer(blobName: string, containerSuffix: string) {
         }
       );
 
-    console.log("Container Instance started:", containerGroup);
+    console.log(`Container instance started: ${containerGroupName}`);
+
+    // Delete the message from the queue after the container has started successfully
+    try {
+      await queueClient.deleteMessage(messageId, popReceipt);
+      console.log("Message deleted from the queue.");
+    } catch (error) {
+      console.error("Error deleting message from the queue:", error);
+    }
   } catch (error) {
-    console.error("Error spinning up the container:", error);
+    console.error("Error starting the container:", error);
     throw error;
   }
 }
 
 async function init() {
-  let containerCounter = 1;
-
+  let containerCounter = 5;
   while (true) {
     try {
       const response: QueueReceiveMessageResponse =
@@ -165,7 +197,7 @@ async function init() {
       }: { receivedMessageItems: DequeuedMessageItem[] } = response;
 
       if (receivedMessageItems.length === 0) {
-        console.log("No messages found in the queue");
+        console.log("Queue is empty.");
         await delay(20000);
         continue;
       }
@@ -182,31 +214,27 @@ async function init() {
         const subjectParts = subject.split("/");
         const blobName = subjectParts.slice(6).join("/");
 
-        await spinUpContainer(blobName, `instance-${containerCounter}`);
-        console.log("Container spun up successfully");
-        containerCounter++;
-      } else {
-        console.log("Invalid event type or subject:", eventType, subject);
-      }
-
-      try {
-        const deleteResponse = await queueClient.deleteMessage(
+        await spinUpContainer(
+          blobName,
+          "instance",
+          containerCounter,
           messageId,
           popReceipt
         );
-        console.log("Deleted message from the queue:", deleteResponse);
-      } catch (error) {
-        console.error("Error deleting message from the queue:", error);
+        console.log("Container processed the blob.");
+        containerCounter++;
+      } else {
+        console.log("Message does not match expected format.");
       }
 
       await delay(20000);
     } catch (error) {
-      console.error("Error receiving messages:", error);
+      console.error("Error processing queue message:", error);
       await delay(20000);
     }
   }
 }
 
 init().catch((err) => {
-  console.error("Error running the sample:", err);
+  console.error("Error running the process:", err);
 });
