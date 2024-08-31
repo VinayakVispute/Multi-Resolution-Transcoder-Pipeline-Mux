@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CloudUploadIcon, X } from "lucide-react";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 const UploadVideoArea = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -70,6 +71,14 @@ const UploadVideoArea = () => {
       eventSource.onmessage = (event) => {
         const { progress } = JSON.parse(event.data);
         setPercentage(progress);
+        if (progress === 100) {
+          console.log("Upload complete, closing EventSource");
+          eventSource.close();
+        } else if (progress === -1) {
+          console.error("Upload failed, closing EventSource");
+          eventSource.close();
+          //can show alert
+        }
       };
 
       eventSource.onerror = (error) => {
@@ -104,6 +113,53 @@ const UploadVideoArea = () => {
     setVideoId(videoId);
 
     setLoading(true);
+    const toastId = toast.custom(
+      (t) => (
+        <div
+          className={`${
+            t.visible ? "animate-enter" : "animate-leave"
+          } max-w-md w-full bg-blue-100 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+        >
+          <div className="flex-1 w-0 p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 pt-0.5">
+                <svg
+                  className="h-10 w-10 text-blue-500 animate-spin"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v8H4z"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3 flex-1">
+                <p className="text-sm font-medium text-blue-900">Loading...</p>
+                <p className="mt-1 text-sm text-blue-700">
+                  Please wait while we process your request.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+      {
+        duration: 30000,
+      }
+    );
     try {
       const response = await axios.post("/api/upload", formData, {
         headers: {
@@ -111,8 +167,106 @@ const UploadVideoArea = () => {
         },
       });
       console.log(response.data);
+      toast.custom(
+        (t) => (
+          <div
+            className={`${
+              t.visible ? "animate-enter" : "animate-leave"
+            } max-w-md w-full bg-green-100 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+          >
+            <div className="flex-1 w-0 p-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 pt-0.5">
+                  <svg
+                    className="h-10 w-10 text-green-500"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2l4-4m0 0a9 9 0 11-6.364-2.636A9 9 0 0112 21a9 9 0 01-9-9a9 9 0 019-9a9 9 0 019 9z"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="text-sm font-medium text-green-900">Success!</p>
+                  <p className="mt-1 text-sm text-green-700">
+                    Video Uploaded Successfully
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex border-l border-green-200">
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-green-600 hover:text-green-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        ),
+        {
+          id: toastId,
+          duration: 3000,
+        }
+      );
     } catch (error) {
       console.error(error);
+      toast.custom(
+        (t) => (
+          <div
+            className={`${
+              t.visible ? "animate-enter" : "animate-leave"
+            } max-w-md w-full bg-red-100 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+          >
+            <div className="flex-1 w-0 p-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 pt-0.5">
+                  <svg
+                    className="h-10 w-10 text-red-500"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="text-sm font-medium text-red-900">Error!</p>
+                  <p className="mt-1 text-sm text-red-700">
+                    There was an error uploading your video.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex border-l border-red-200">
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-red-600 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        ),
+        {
+          id: toastId,
+          duration: 3000,
+        }
+      );
     } finally {
       setLoading(false);
       setTimeout(() => {
