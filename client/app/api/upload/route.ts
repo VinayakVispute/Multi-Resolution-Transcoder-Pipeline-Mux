@@ -85,12 +85,14 @@ export async function POST(req: Request) {
       options
     );
     console.log("File uploaded successfully");
+    updateProgress(videoId, 100);
     return NextResponse.json(
       { message: "File uploaded successfully" },
       { status: 200 }
     );
   } catch (error: any) {
     console.error("Upload failed:", error);
+    updateProgress(videoId, -1); // Set progress to -1 to indicate an error
     return NextResponse.json(
       { message: "Upload failed", error: error.message },
       { status: 500 }

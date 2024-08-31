@@ -19,7 +19,12 @@ export async function GET(req: NextRequest) {
         while (true) {
           const progress = progressMap.get(videoId) || 0;
           controller.enqueue(`data: ${JSON.stringify({ progress })}\n\n`);
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          if (progress === 100 || progress === -1) {
+            console.log("Upload complete, closing stream");
+            controller.close();
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 1000)); // 1 second
         }
       })();
     },
@@ -38,4 +43,10 @@ export async function GET(req: NextRequest) {
 export function updateProgress(videoId: string, progress: number) {
   console.log("Updating progress for video", videoId, "to", progress);
   progressMap.set(videoId, progress);
+  if (progress === 100 || progress === -1) {
+    // Optionally, you can remove the entry from the map once it's complete
+    setTimeout(() => {
+      progressMap.delete(videoId);
+    }, 5000); // Remove the entry after 5 seconds
+  }
 }
