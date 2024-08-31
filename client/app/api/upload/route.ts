@@ -4,6 +4,7 @@ import {
   BlockBlobUploadStreamOptions,
 } from "@azure/storage-blob";
 import { Readable } from "stream";
+import { updateProgress } from "../progress/route";
 
 export async function POST(req: Request) {
   console.log("Parsing the request body");
@@ -13,6 +14,7 @@ export async function POST(req: Request) {
   const videoFile = formData.get("video") as File;
   const videoName = formData.get("videoName") as string;
   const resolution = formData.get("resolution");
+  const videoId = formData.get("videoId") as string;
 
   console.log(
     "Video file:",
@@ -65,6 +67,13 @@ export async function POST(req: Request) {
   const options: BlockBlobUploadStreamOptions = {
     blobHTTPHeaders: {
       blobContentType: videoFile.type, // Set the content type based on the file
+    },
+    onProgress: (progress) => {
+      const progressPercentage = Math.floor(
+        (progress.loadedBytes / buffer.length) * 100
+      );
+      console.log("Progress:", progressPercentage);
+      updateProgress(videoId, progressPercentage);
     },
   };
 

@@ -27,7 +27,7 @@ export default async function Component() {
 
   const fullName = `${firstName} ${lastName}`;
   return (
-    <div className="flex flex-col h-screen bg-white text-black">
+    <div className="flex flex-col h-screen bg-white text-black mb-8">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-20 px-4 sm:px-6 py-3 flex items-center justify-between">
         <nav className="flex items-center gap-6">
           <Link

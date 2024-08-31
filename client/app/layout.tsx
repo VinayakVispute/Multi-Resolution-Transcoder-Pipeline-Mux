@@ -33,7 +33,12 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body
-          className={cn("antialiased", fontHeading.variable, fontBody.variable)}
+          className={cn(
+            "antialiased",
+            fontHeading.variable,
+            fontBody.variable,
+            "mb-8"
+          )}
         >
           {children}
         </body>

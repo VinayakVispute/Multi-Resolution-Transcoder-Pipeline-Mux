@@ -12,3 +12,11 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id           Int    @id @default(autoincrement())
+  profileImage String @default("https://res.cloudinary.com/dkawvablj/image/upload/v1725119468/Core/mwpxqnn5viel4zddmng7.jpg")
+  emailAddress String
+  userName     String @unique
+  firstName    String
+}

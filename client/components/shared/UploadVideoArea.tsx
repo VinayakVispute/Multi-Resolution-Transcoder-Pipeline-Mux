@@ -13,6 +13,10 @@ const UploadVideoArea = () => {
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [videoResolution, setVideoResolution] = useState<string | null>(null);
   const [videoName, setVideoName] = useState<string | null>(null);
+  const [percentage, setPercentage] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [videoId, setVideoId] = useState<string | null>(null);
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
@@ -59,26 +63,62 @@ const UploadVideoArea = () => {
     }
   }, [videoPreview]);
 
+  useEffect(() => {
+    if (videoId) {
+      const eventSource = new EventSource(`/api/progress?videoId=${videoId}`);
+      console.log("Event source created");
+      eventSource.onmessage = (event) => {
+        const { progress } = JSON.parse(event.data);
+        setPercentage(progress);
+      };
+
+      eventSource.onerror = (error) => {
+        console.error("EventSource error:", error);
+        eventSource.close();
+      };
+
+      return () => {
+        eventSource.close();
+      };
+    }
+  }, [videoId]);
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { video: ["mp4", "avi", "mkv"] },
+    accept: {
+      "video/mp4": [".mp4"],
+      "video/x-matroska": [".mkv"],
+    },
     multiple: false,
     disabled: videoFile !== null,
   });
 
   const submitVideo = async () => {
+    const videoId = `${Date.now()}-${videoName}`;
+
     const formData = new FormData();
     formData.append("video", videoFile as File);
     formData.append("videoName", videoName as string);
     formData.append("resolution", videoResolution as string);
+    formData.append("videoId", videoId);
+    setVideoId(videoId);
 
-    // Make a POST request to the server with the form data
-    const response = await axios.post("/api/upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    console.log(response.data);
+    setLoading(true);
+    try {
+      const response = await axios.post("/api/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      console.log(response.data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+      setTimeout(() => {
+        setPercentage(0);
+      }, 5000); // Reset the progress bar after 5 seconds
+    }
   };
 
   return (
@@ -151,7 +191,11 @@ const UploadVideoArea = () => {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button className="bg-blue-600 text-white" onClick={submitVideo}>
+          <Button
+            className="bg-blue-600 text-white"
+            onClick={submitVideo}
+            disabled={!videoFile || loading}
+          >
             Upload
           </Button>
           <Button
@@ -162,6 +206,29 @@ const UploadVideoArea = () => {
             Clear
           </Button>
         </div>
+        {loading && (
+          <div className="mt-4">
+            <div>
+              <div className="flex justify-between mb-1">
+                <span className="text-base font-medium text-blue-700 dark:text-white">
+                  Upload
+                </span>
+                <span className="text-sm font-medium text-blue-700 dark:text-white">
+                  {percentage}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                <div
+                  className="bg-blue-600 h-2.5 rounded-full"
+                  style={{
+                    width: `${percentage}%`,
+                    transition: "width 0.5s ease-in-out",
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
