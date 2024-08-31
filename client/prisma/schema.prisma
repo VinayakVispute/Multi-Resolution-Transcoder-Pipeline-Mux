@@ -14,9 +14,50 @@ datasource db {
 }
 
 model User {
-  id           Int    @id @default(autoincrement())
-  profileImage String @default("https://res.cloudinary.com/dkawvablj/image/upload/v1725119468/Core/mwpxqnn5viel4zddmng7.jpg")
-  emailAddress String
-  userName     String @unique
-  firstName    String
+  id            Int             @id @default(autoincrement())
+  clerkId       String          @unique
+  name          String
+  userName      String          @unique
+  email         String
+  picture       String          @default("https://res.cloudinary.com/dkawvablj/image/upload/v1725119468/Core/mwpxqnn5viel4zddmng7.jpg")
+  joinedAt      DateTime        @default(now())
+  UploadedVideo UploadedVideo[]
+}
+
+model Video {
+  id              Int               @id @default(autoincrement())
+  title           String
+  videoUrl        String
+  uploadedAt      DateTime          @default(now())
+  resolution      String
+  UploadedVideo   UploadedVideo[]
+  TranscodedVideo TranscodedVideo[]
+}
+
+model UploadedVideo {
+  id              Int               @id @default(autoincrement())
+  user            User              @relation(fields: [userId], references: [id])
+  userId          Int
+  status          Status
+  video           Video             @relation(fields: [videoId], references: [id])
+  videoId         Int
+  TranscodedVideo TranscodedVideo[]
+  uploadedAt      DateTime          @updatedAt
+  createdAt       DateTime          @default(now())
+}
+
+model TranscodedVideo {
+  id            Int           @id @default(autoincrement())
+  transcodedAt  DateTime      @default(now())
+  sourceVideo   UploadedVideo @relation(fields: [sourceVideoId], references: [id])
+  sourceVideoId Int
+  video         Video         @relation(fields: [videoId], references: [id])
+  videoId       Int
+  uploadedAt    DateTime      @updatedAt
+}
+
+enum Status {
+  PENDING
+  FINISHED
+  FAILED
 }
