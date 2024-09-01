@@ -4,10 +4,14 @@ import {
   BlockBlobUploadStreamOptions,
 } from "@azure/storage-blob";
 import { Readable } from "stream";
-import { updateProgress } from "../progress/route";
+
+import { createdUploadedVideoInDb } from "@/lib/action/video.action";
+import { v4 as uuidv4 } from "uuid";
+import { updateProgress } from "@/utils/progress";
 
 export async function POST(req: Request) {
   console.log("Parsing the request body");
+  const uniqueId = uuidv4(); // Generate a UUID
 
   const formData = await req.formData();
 
@@ -39,6 +43,11 @@ export async function POST(req: Request) {
     console.log(message);
     return NextResponse.json({ message }, { status: 400 });
   }
+  const fileExtension = videoName.split(".").pop();
+  const baseName = videoName.substring(0, videoName.lastIndexOf("."));
+
+  const uniqueVideoName = `${baseName}_${uniqueId}.${fileExtension}`; // Create a unique video name with extension
+
   const accountName = process.env.BLOB_RESOURCE_NAME;
   const sasToken = process.env.SAS_TOKEN_AZURE;
   const containerName = process.env.BLOB_CONTAINER_NAME;
@@ -55,7 +64,7 @@ export async function POST(req: Request) {
     `https://${accountName}.blob.core.windows.net/?${sasToken}`
   );
   const containerClient = blobServiceClient.getContainerClient(containerName);
-  const blobClient = containerClient.getBlockBlobClient(videoName);
+  const blobClient = containerClient.getBlockBlobClient(uniqueVideoName);
 
   const videoBuffer = await videoFile.arrayBuffer();
   const buffer = Buffer.from(videoBuffer);
@@ -75,17 +84,32 @@ export async function POST(req: Request) {
       console.log("Progress:", progressPercentage);
       updateProgress(videoId, progressPercentage);
     },
+    metadata: {
+      uniqueId: uniqueId,
+      currentResolution: resolution as string,
+    },
   };
 
   try {
-    await blobClient.uploadStream(
+    const response = await blobClient.uploadStream(
       fileStream,
       bufferSize,
       maxConcurrency,
       options
     );
-    console.log("File uploaded successfully");
+    console.log("File uploaded successfully", blobClient);
+    console.log("Response", response);
+
+    // Retrieve and log the metadata of the uploaded blob
+    const properties = await blobClient.getProperties();
+
     updateProgress(videoId, 100);
+    await createdUploadedVideoInDb({
+      id: uniqueId,
+      title: videoName,
+      videoUrl: blobClient.url,
+      resolution: resolution as string,
+    });
     return NextResponse.json(
       { message: "File uploaded successfully" },
       { status: 200 }

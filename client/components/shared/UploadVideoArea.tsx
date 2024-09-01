@@ -269,6 +269,10 @@ const UploadVideoArea = () => {
       );
     } finally {
       setLoading(false);
+      setVideoFile(null);
+      setVideoPreview(null);
+      setVideoResolution(null);
+      setVideoName(null);
       setTimeout(() => {
         setPercentage(0);
       }, 5000); // Reset the progress bar after 5 seconds

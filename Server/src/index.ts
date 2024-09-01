@@ -49,6 +49,8 @@ const client = new ContainerInstanceManagementClient(
   SUBSCRIPTION_ID
 );
 
+// Set up Express and HTTP server
+
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -92,8 +94,8 @@ async function spinUpContainer(
   messageId: string,
   popReceipt: string
 ) {
+  const containerGroupName = `${CONTAINER_GROUP_NAME}-${containerSuffix}`;
   try {
-    const containerGroupName = `${CONTAINER_GROUP_NAME}-${containerSuffix}`;
     const existingContainerGroup = await checkContainerGroupStatus(
       containerGroupName
     );
@@ -178,6 +180,7 @@ async function spinUpContainer(
     }
   } catch (error) {
     console.error("Error starting the container:", error);
+
     throw error;
   }
 }

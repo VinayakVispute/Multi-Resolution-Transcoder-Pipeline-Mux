@@ -3,7 +3,7 @@ const dotenv = require("dotenv");
 const path = require("node:path");
 const ffmpeg = require("fluent-ffmpeg");
 const fs = require("fs");
-
+const axios = require("axios");
 dotenv.config();
 
 const RESOLUTIONS = [
@@ -29,8 +29,13 @@ const AZURE_STORAGE_CONNECTION_STRING =
 const BUCKET_NAME = process.env.BUCKET_NAME;
 const INPUT_VIDEO = process.env.INPUT_VIDEO;
 const OUTPUT_VIDEO_BUCKET = process.env.OUTPUT_VIDEO_BUCKET;
-
-if (!AZURE_STORAGE_CONNECTION_STRING || !BUCKET_NAME || !INPUT_VIDEO) {
+const WEBHOOK_URL = process.env.WEBHOOK_URL;
+if (
+  !AZURE_STORAGE_CONNECTION_STRING ||
+  !BUCKET_NAME ||
+  !WEBHOOK_URL ||
+  !INPUT_VIDEO
+) {
   throw new Error(
     "AZURE_STORAGE_CONNECTION_STRING, BUCKET_NAME, or INPUT_VIDEO is not defined in environment variables."
   );
@@ -40,7 +45,40 @@ const blobServiceClient = BlobServiceClient.fromConnectionString(
   AZURE_STORAGE_CONNECTION_STRING
 );
 
+async function sendWebhook(params) {
+  const { success, message, data } = params;
+  console.log("Sending webhook:", {
+    success,
+    message,
+    data: JSON.stringify(data, null, 2),
+  });
+  if (!success || !message || !data) {
+    throw new Error("Invalid webhook parameters");
+  }
+
+  try {
+    const { transcodedVideo, uniqueId } = data;
+    if (!uniqueId || !transcodedVideo) {
+      throw new Error("Invalid webhook data parameters");
+    }
+
+    await axios.post(`${WEBHOOK_URL}/api/webhooks/update-status`, {
+      success,
+      message,
+      data: {
+        uniqueId,
+        transcodedVideo,
+      },
+    });
+    console.log("Webhook sent:", { success, message });
+  } catch (error) {
+    console.error("Error sending webhook:", error);
+  }
+}
+
 async function init() {
+  const transcodedVideo = [];
+
   try {
     console.log("Starting video processing...");
 
@@ -55,7 +93,15 @@ async function init() {
     // Download the original video
     const containerClient = blobServiceClient.getContainerClient(BUCKET_NAME);
     const blobClient = containerClient.getBlobClient(INPUT_VIDEO);
+    const { metadata } = await blobClient.getProperties();
 
+    if (!metadata || !metadata.uniqueid) {
+      throw new Error("No metadata found for the video");
+    }
+
+    const { uniqueid } = metadata;
+
+    console.log("This is the metadata", metadata);
     console.log(`Downloading video from blob: ${INPUT_VIDEO}`);
     const downloadFilePath = path.join(
       __dirname,
@@ -99,7 +145,11 @@ async function init() {
             const blobName = path.basename(output); // Use the file name as the blob name
             const blockBlobClient =
               outputContainerClient.getBlockBlobClient(blobName);
-
+            transcodedVideo.push({
+              name: blobName,
+              url: blockBlobClient.url,
+              resolution: resolution.name,
+            });
             console.log(`Uploading transcoded video to blob: ${blobName}`);
             try {
               await blockBlobClient.uploadFile(output);
@@ -125,7 +175,25 @@ async function init() {
     await Promise.all(promises);
 
     console.log("All videos transcoded and uploaded to Azure Storage");
+    console.log("Transcoding complete", transcodedVideo);
+    await sendWebhook({
+      success: true,
+      message: "All videos transcoded and uploaded to Azure Storage",
+      data: {
+        transcodedVideo,
+        uniqueId: uniqueid,
+      },
+    });
   } catch (error) {
+    await sendWebhook({
+      success: false,
+      message: `Error during video processing: ${error.message}`,
+      data: {
+        transcodedVideo: [],
+        uniqueId: uniqueid,
+      },
+    });
+
     console.error("Error during video processing:", error);
   } finally {
     process.exit(0);

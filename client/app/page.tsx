@@ -47,7 +47,19 @@ export default function Component() {
               Technology
             </Link>
             <SignedIn>
-              <Button variant="secondary">Get Started</Button>
+              <Link
+                href="/Profile"
+                className="text-sm font-medium hover:underline"
+                prefetch={false}
+              >
+                Profile
+              </Link>
+              <Link
+                className={buttonVariants({ variant: "secondary" })}
+                href="/Dashboard"
+              >
+                Dashboard
+              </Link>
               <UserButton />
               <SignOutButton />
             </SignedIn>
