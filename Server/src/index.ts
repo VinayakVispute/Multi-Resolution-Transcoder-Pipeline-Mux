@@ -195,7 +195,7 @@ async function init() {
       const response: QueueReceiveMessageResponse =
         await queueClient.receiveMessages({
           numberOfMessages: 1,
-          visibilityTimeout: 60,
+          visibilityTimeout: 70, // It will wait for 70 seconds before making the message available for processing again
         });
 
       const {
