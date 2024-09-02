@@ -155,6 +155,9 @@ async function spinUpContainer(
                 { name: "BUCKET_NAME", value: BUCKET_NAME },
                 { name: "INPUT_VIDEO", value: blobName },
                 { name: "OUTPUT_VIDEO_BUCKET", value: OUTPUT_VIDEO_BUCKET },
+                {
+                  name: "WEBHOOK_URL",
+                },
               ],
             },
           ],
