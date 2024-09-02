@@ -1,3 +1,5 @@
+import { Video } from "@prisma/client";
+
 export interface createUploadVideoInDbParams {
   id: string;
   title: string;
@@ -11,14 +13,14 @@ enum Status {
   Failed = "FAILED",
 }
 
-interface Video {
-  id: number;
-  title: string;
-  videoUrl: string;
+export interface ITranscodedVideo {
+  id: string;
+  transcodedAt: Date;
+  sourceVideoId: string;
+  VideoId: string;
   uploadedAt: Date;
-  resolution: string;
+  video: Video;
 }
-
 export interface UploadedVideo {
   id: number;
   userId: number;
@@ -27,6 +29,7 @@ export interface UploadedVideo {
   uploadedAt: Date;
   createdAt: Date;
   video: Video;
+  TranscodedVideo: ITranscodedVideo[];
 }
 
 export interface VideoResolutionOptionProps {
@@ -34,7 +37,8 @@ export interface VideoResolutionOptionProps {
 }
 
 export interface VideoDialogProps {
-  video: UploadedVideo;
+  VideoDetails: UploadedVideo;
+  TranscodedVideos: ITranscodedVideo[];
 }
 
 interface transcodedVideoWebhook {

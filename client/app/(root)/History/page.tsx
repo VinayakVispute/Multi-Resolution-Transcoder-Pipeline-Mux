@@ -15,63 +15,52 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import Link from "next/link";
-import { RefreshCw, Download, Eye, FileDown } from "lucide-react";
+
+import { RefreshCw, Download, Eye, FileDown, VideoOff } from "lucide-react";
 import { fetchUploadedVideos } from "@/lib/action/video.action";
-import {
-  UploadedVideo,
-  VideoDialogProps,
-  VideoResolutionOptionProps,
-} from "@/interface";
+import { UploadedVideo, VideoDialogProps } from "@/interface";
 import { statusColor } from "@/lib/utils";
-import toast from "react-hot-toast";
+import VideoResolutionOption from "@/components/shared/VideoResolutionOption";
 
-const resolutions = ["1080p", "720p", "480p"];
 
-const VideoResolutionOption = ({ resolution }: VideoResolutionOptionProps) => (
-  <div>
-    <div className="text-sm font-medium">{resolution}</div>
-    <div className="flex items-center gap-2">
-      <Link href="#" className="text-sm text-muted-foreground" prefetch={false}>
-        Download
-      </Link>
-      <Button variant="outline" size="sm">
-        <Eye className="h-4 w-4 mr-2" />
-        <span>View</span>
-      </Button>
-    </div>
-  </div>
-);
 
-const VideoDialog = ({ video }: VideoDialogProps) => (
-  <DialogContent className="sm:max-w-[800px]">
-    <div className="grid gap-6">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <div className="text-lg font-medium">{video.video.title}</div>
-          <div className="text-sm text-muted-foreground">
-            Transcoded at: {new Date(video.uploadedAt).toLocaleString()}
+const VideoDialog = ({ TranscodedVideos, VideoDetails }: VideoDialogProps) => {
+
+
+
+  return (
+    <DialogContent className="sm:max-w-[800px]">
+      <div className="grid gap-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="text-lg font-medium">{"video.video.title"}</div>
+            <div className="text-sm text-muted-foreground">
+              Transcoded at: {new Date(VideoDetails.uploadedAt).toLocaleString()}
+            </div>
+          </div>
+          <Badge variant="secondary" className={statusColor[VideoDetails.status]}>
+            {VideoDetails.status}
+          </Badge>
+        </div>
+        <div className="grid gap-4">
+          <div className="grid grid-cols-3 gap-4">
+            {TranscodedVideos.map((singleTranscodedVideo) => (
+              <VideoResolutionOption
+                key={singleTranscodedVideo.id}
+                videoDetails={singleTranscodedVideo.video}
+              />
+            ))}
           </div>
         </div>
-        <Badge variant="secondary" className={statusColor[video.status]}>
-          {video.status}
-        </Badge>
       </div>
-      <div className="grid gap-4">
-        <div className="grid grid-cols-3 gap-4">
-          {resolutions.map((resolution) => (
-            <VideoResolutionOption key={resolution} resolution={resolution} />
-          ))}
-        </div>
-      </div>
-    </div>
-    <DialogFooter>
-      <DialogClose asChild>
-        <Button type="button">Close</Button>
-      </DialogClose>
-    </DialogFooter>
-  </DialogContent>
-);
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button type="button">Close</Button>
+        </DialogClose>
+      </DialogFooter>
+    </DialogContent>
+  );
+};
 
 export default async function History() {
   const response = await fetchUploadedVideos();
@@ -102,7 +91,7 @@ export default async function History() {
       </div>
     );
   }
-
+  console.log("videoData", JSON.stringify(videoData, null, 2));
   return (
     <div className="flex flex-col w-full">
       <header className="bg-background border-b px-6 py-4 flex items-center justify-between">
@@ -141,9 +130,8 @@ export default async function History() {
                 <TableCell>{video.video.resolution}</TableCell>
                 <TableCell>
                   <span
-                    className={`text-xs font-medium me-2 px-2.5 py-0.5 rounded ${
-                      statusColor[video.status]
-                    }`}
+                    className={`text-xs font-medium me-2 px-2.5 py-0.5 rounded ${statusColor[video.status]
+                      }`}
                   >
                     {video.status}
                   </span>
@@ -159,7 +147,10 @@ export default async function History() {
                         View Transcoded Video
                       </Button>
                     </DialogTrigger>
-                    <VideoDialog video={video} />
+                    <VideoDialog
+                      TranscodedVideos={video.TranscodedVideo}
+                      VideoDetails={video}
+                    />
                   </Dialog>
                 </TableCell>
               </TableRow>

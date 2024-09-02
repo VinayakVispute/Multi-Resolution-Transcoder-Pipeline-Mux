@@ -98,6 +98,11 @@ export const fetchUploadedVideos = async (): Promise<{
       },
       include: {
         video: true,
+        TranscodedVideo: {
+          include: {
+            video: true,
+          },
+        },
       },
     });
 
