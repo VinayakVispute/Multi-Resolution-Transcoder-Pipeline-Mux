@@ -1,21 +1,13 @@
 import { lazy, Suspense } from "react";
-import { Button } from "../ui/button";
-import { Download, Share2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Download, Share2, Play } from "lucide-react";
 import { Video } from "@prisma/client";
 const ReactPlayer = lazy(() => import("react-player/lazy"));
 
 function VideoSkeleton() {
   return (
-    <div className="aspect-video bg-gray-200 animate-pulse flex items-center justify-center">
-      <svg
-        className="w-12 h-12 text-gray-400"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-        fill="currentColor"
-        viewBox="0 0 640 512"
-      >
-        <path d="M64 64V352H576V64H64zM0 64C0 28.7 28.7 0 64 0H576c35.3 0 64 28.7 64 64V352c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V64zM128 448H512c17.7 0 32 14.3 32 32s-14.3 32-32 32H128c-17.7 0-32-14.3-32-32s14.3-32 32-32z" />
-      </svg>
+    <div className="aspect-video bg-gradient-to-br from-[#e6fcf5] to-[#0ca678] animate-pulse flex items-center justify-center rounded-lg shadow-lg transition-all duration-300">
+      <Play className="w-16 h-16 text-white opacity-50" />
     </div>
   );
 }
@@ -41,9 +33,9 @@ const VideoPlayer = ({
   };
 
   return (
-    <div className="flex flex-col space-y-4">
-      <h2 className="text-2xl font-bold">{videoDetails.title}</h2>
-      <div className="aspect-video">
+    <div className="flex flex-col space-y-6 bg-white rounded-xl shadow-xl p-6 transition-all duration-300 hover:shadow-2xl">
+      <h2 className="text-2xl font-bold text-[#0ca678]">{videoDetails.title}</h2>
+      <div className="aspect-video rounded-lg overflow-hidden shadow-md">
         <Suspense fallback={<VideoSkeleton />}>
           {!isVideoLoaded && <VideoSkeleton />}
           <ReactPlayer
@@ -53,15 +45,27 @@ const VideoPlayer = ({
             controls
             onReady={() => setIsVideoLoaded(true)}
             style={{ display: isVideoLoaded ? "block" : "none" }}
+            config={{
+              file: {
+                attributes: {
+                  controlsList: 'nodownload'
+                }
+              }
+            }}
           />
         </Suspense>
       </div>
-      <div className="flex justify-between items-center">
-        <span className="text-sm text-gray-500">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+        <span className="text-sm text-[#12b886] bg-[#e6fcf5] px-3 py-1 rounded-full font-medium">
           Resolution: {videoDetails.resolution}
         </span>
-        <div className="space-x-2">
-          <Button variant="outline" size="sm" onClick={handleDownload}>
+        <div className="flex space-x-2 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownload}
+            className="flex-1 sm:flex-none bg-gradient-to-r from-[#0ca678] to-[#12b886] text-white border-none hover:from-[#12b886] hover:to-[#0ca678] transition-all duration-300"
+          >
             <Download className="w-4 h-4 mr-2" />
             Download
           </Button>
@@ -69,6 +73,7 @@ const VideoPlayer = ({
             variant="outline"
             size="sm"
             onClick={() => setIsShareOpen(true)}
+            className="flex-1 sm:flex-none bg-white text-[#0ca678] border-[#0ca678] hover:bg-[#e6fcf5] transition-all duration-300"
           >
             <Share2 className="w-4 h-4 mr-2" />
             Share

@@ -3,7 +3,8 @@ import prisma from "@/lib/prisma";
 import { currentUser } from "@clerk/nextjs/server";
 import { createUploadVideoInDbParams, UploadedVideo } from "@/interface";
 import { revalidatePath } from "next/cache";
-import { Status } from "@prisma/client";
+import { EventStatus, Status } from "@prisma/client";
+import { createNotification } from "./notification.action";
 
 // TODO: Implement revalidation and error handling
 
@@ -130,8 +131,15 @@ export const createAndLinkTranscodedVideos = async (
   status: Status,
   videoData: Array<{ name: string; url: string; resolution: string }>
 ) => {
+  const userId = "332c6eed-9980-4f75-a43c-7f461b5caf1c";
   try {
     // Step 1: Create multiple Video records
+    // const user = await currentUser();
+    // if (!user || !user.privateMetadata || !user.privateMetadata.userId) {
+    //   throw new Error("User authentication failed");
+    // }
+    // const userId = user.privateMetadata.userId as string;
+
     const createdVideos = await prisma.video.createManyAndReturn({
       data: videoData.map((video) => ({
         title: video.name,
@@ -175,12 +183,25 @@ export const createAndLinkTranscodedVideos = async (
       data: {
         status: status,
       },
+      include: {
+        video: {
+          select: {
+            title: true,
+          },
+        },
+      },
     });
 
     if (!updatedUploadedVideo) {
       throw new Error("Failed to update the uploaded video status");
     }
+    await createNotification({
+      uploadedVideoId: uniqueId,
+      userId: userId,
+      eventStatus: EventStatus.FINISHED,
+    });
 
+    revalidatePath("/History");
     return {
       success: true,
       message:
@@ -188,6 +209,12 @@ export const createAndLinkTranscodedVideos = async (
     };
   } catch (error: any) {
     console.error("Error in createAndLinkTranscodedVideos:", error);
+    await createNotification({
+      uploadedVideoId: uniqueId,
+      userId: userId,
+      eventStatus: EventStatus.FINISHED,
+    });
+    revalidatePath("/History");
     return { success: false, message: error.message };
   }
 };

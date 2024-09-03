@@ -23,6 +23,7 @@ const SUBSCRIPTION_ID = process.env.SUBSCRIPTION_ID;
 const ACR_USERNAME = process.env.ACR_USERNAME;
 const ACR_PASSWORD = process.env.ACR_PASSWORD;
 const QUEUE_NAME = process.env.QUEUE_NAME;
+const WEBHOOK_UPLOADSTATUS_URL = process.env.WEBHOOK_UPLOADSTATUS_URL;
 
 if (
   !AZURE_STORAGE_CONNECTION_STRING ||
@@ -35,7 +36,8 @@ if (
   !SUBSCRIPTION_ID ||
   !ACR_USERNAME ||
   !ACR_PASSWORD ||
-  !QUEUE_NAME
+  !QUEUE_NAME ||
+  !WEBHOOK_UPLOADSTATUS_URL
 ) {
   throw new Error("Required environment variables are missing.");
 }
@@ -157,6 +159,7 @@ async function spinUpContainer(
                 { name: "OUTPUT_VIDEO_BUCKET", value: OUTPUT_VIDEO_BUCKET },
                 {
                   name: "WEBHOOK_URL",
+                  value: WEBHOOK_UPLOADSTATUS_URL,
                 },
               ],
             },

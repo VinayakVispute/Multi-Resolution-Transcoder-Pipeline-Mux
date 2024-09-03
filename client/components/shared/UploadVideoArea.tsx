@@ -1,4 +1,5 @@
 "use client";
+
 import { useCallback, useState, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
@@ -77,7 +78,6 @@ const UploadVideoArea = () => {
         } else if (progress === -1) {
           console.error("Upload failed, closing EventSource");
           eventSource.close();
-          //can show alert
         }
       };
 
@@ -116,15 +116,14 @@ const UploadVideoArea = () => {
     const toastId = toast.custom(
       (t) => (
         <div
-          className={`${
-            t.visible ? "animate-enter" : "animate-leave"
-          } max-w-md w-full bg-blue-100 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+          className={`${t.visible ? "animate-enter" : "animate-leave"
+            } max-w-md w-full bg-[#e6fcf5] shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-[#0ca678] ring-opacity-5`}
         >
           <div className="flex-1 w-0 p-4">
             <div className="flex items-start">
               <div className="flex-shrink-0 pt-0.5">
                 <svg
-                  className="h-10 w-10 text-blue-500 animate-spin"
+                  className="h-10 w-10 text-[#0ca678] animate-spin"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -147,8 +146,8 @@ const UploadVideoArea = () => {
                 </svg>
               </div>
               <div className="ml-3 flex-1">
-                <p className="text-sm font-medium text-blue-900">Loading...</p>
-                <p className="mt-1 text-sm text-blue-700">
+                <p className="text-sm font-medium text-[#0ca678]">Loading...</p>
+                <p className="mt-1 text-sm text-[#12b886]">
                   Please wait while we process your request.
                 </p>
               </div>
@@ -170,15 +169,14 @@ const UploadVideoArea = () => {
       toast.custom(
         (t) => (
           <div
-            className={`${
-              t.visible ? "animate-enter" : "animate-leave"
-            } max-w-md w-full bg-green-100 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+            className={`${t.visible ? "animate-enter" : "animate-leave"
+              } max-w-md w-full bg-[#e6fcf5] shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-[#0ca678] ring-opacity-5`}
           >
             <div className="flex-1 w-0 p-4">
               <div className="flex items-start">
                 <div className="flex-shrink-0 pt-0.5">
                   <svg
-                    className="h-10 w-10 text-green-500"
+                    className="h-10 w-10 text-[#0ca678]"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -189,22 +187,22 @@ const UploadVideoArea = () => {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M9 12l2 2l4-4m0 0a9 9 0 11-6.364-2.636A9 9 0 0112 21a9 9 0 01-9-9a9 9 0 019-9a9 9 0 019 9z"
+                      d="M9 12l2 2l4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
                 </div>
                 <div className="ml-3 flex-1">
-                  <p className="text-sm font-medium text-green-900">Success!</p>
-                  <p className="mt-1 text-sm text-green-700">
+                  <p className="text-sm font-medium text-[#0ca678]">Success!</p>
+                  <p className="mt-1 text-sm text-[#12b886]">
                     Video Uploaded Successfully
                   </p>
                 </div>
               </div>
             </div>
-            <div className="flex border-l border-green-200">
+            <div className="flex border-l border-[#0ca678]">
               <button
                 onClick={() => toast.dismiss(t.id)}
-                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-green-600 hover:text-green-500 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-[#0ca678] hover:text-[#12b886] focus:outline-none focus:ring-2 focus:ring-[#0ca678]"
               >
                 Close
               </button>
@@ -221,15 +219,14 @@ const UploadVideoArea = () => {
       toast.custom(
         (t) => (
           <div
-            className={`${
-              t.visible ? "animate-enter" : "animate-leave"
-            } max-w-md w-full bg-red-100 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+            className={`${t.visible ? "animate-enter" : "animate-leave"
+              } max-w-md w-full bg-[#fff5f5] shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-[#ff6b6b] ring-opacity-5`}
           >
             <div className="flex-1 w-0 p-4">
               <div className="flex items-start">
                 <div className="flex-shrink-0 pt-0.5">
                   <svg
-                    className="h-10 w-10 text-red-500"
+                    className="h-10 w-10 text-[#ff6b6b]"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -245,17 +242,17 @@ const UploadVideoArea = () => {
                   </svg>
                 </div>
                 <div className="ml-3 flex-1">
-                  <p className="text-sm font-medium text-red-900">Error!</p>
-                  <p className="mt-1 text-sm text-red-700">
+                  <p className="text-sm font-medium text-[#ff6b6b]">Error!</p>
+                  <p className="mt-1 text-sm text-[#fa5252]">
                     There was an error uploading your video.
                   </p>
                 </div>
               </div>
             </div>
-            <div className="flex border-l border-red-200">
+            <div className="flex border-l border-[#ff6b6b]">
               <button
                 onClick={() => toast.dismiss(t.id)}
-                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-red-600 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-[#ff6b6b] hover:text-[#fa5252] focus:outline-none focus:ring-2 focus:ring-[#ff6b6b]"
               >
                 Close
               </button>
@@ -280,23 +277,22 @@ const UploadVideoArea = () => {
   };
 
   return (
-    <Card className="bg-white border border-gray-200">
-      <CardHeader className="bg-white">
-        <CardTitle className="text-black">Upload a Video</CardTitle>
+    <Card className="bg-white border border-[#0ca678]">
+      <CardHeader className="bg-[#0ca678]">
+        <CardTitle className="text-white">Upload a Video</CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-4 bg-white">
+      <CardContent className="grid gap-4 bg-white p-6">
         <div
           {...getRootProps()}
-          className={`relative flex items-center justify-center border-2 border-dashed rounded-lg p-8 transition-colors ${
-            isDragActive ? "border-blue-600" : "border-gray-800"
-          }`}
+          className={`relative flex items-center justify-center border-2 border-dashed rounded-lg p-8 transition-colors ${isDragActive ? "border-[#0ca678]" : "border-[#12b886]"
+            }`}
         >
           <input {...getInputProps()} />
           {!videoPreview ? (
             <div className="text-center flex flex-col gap-y-4 justify-center items-center">
-              <CloudUploadIcon className="w-8 h-8 text-gray-500" />
-              <div className="text-black">Drag and drop your video here</div>
-              <div className="text-sm text-gray-500">
+              <CloudUploadIcon className="w-12 h-12 text-[#12b886]" />
+              <div className="text-[#0ca678] font-medium">Drag and drop your video here</div>
+              <div className="text-sm text-[#12b886]">
                 or click to select a file
               </div>
             </div>
@@ -309,7 +305,7 @@ const UploadVideoArea = () => {
               />
               <button
                 onClick={removeVideo}
-                className="absolute top-2 right-2 p-1 bg-black bg-opacity-50 rounded-full"
+                className="absolute top-2 right-2 p-1 bg-[#0ca678] bg-opacity-50 rounded-full hover:bg-opacity-75 transition-colors"
               >
                 <X className="w-5 h-5 text-white" />
               </button>
@@ -317,40 +313,37 @@ const UploadVideoArea = () => {
           )}
         </div>
         {videoResolution && (
-          <div className="text-black">Video Quality: {videoResolution}</div>
+          <div className="text-[#0ca678] font-medium">Video Quality: {videoResolution}</div>
         )}
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="video-name" className="text-black">
+            <Label htmlFor="video-name" className="text-[#0ca678]">
               Video Name
             </Label>
             <Input
               id="video-name"
               placeholder="Enter video name"
-              className="border-gray-800 text-black"
-              style={{
-                backgroundColor: "white",
-              }}
+              className="border-[#12b886] text-[#0ca678]"
               disabled={!videoFile}
               value={videoName || ""}
               onChange={(e) => setVideoName(e.target.value)}
             />
           </div>
           <div className="grid gap-2">
-            <label htmlFor="video-resolution" className="text-black">
+            <Label htmlFor="video-resolution" className="text-[#0ca678]">
               Video Resolution (Current Video)
-            </label>
+            </Label>
             <Input
               id="video-resolution"
               value={videoResolution || "N/A"}
-              className="border-gray-800 text-black bg-white"
+              className="border-[#12b886] text-[#0ca678] bg-white"
               readOnly
             />
           </div>
         </div>
         <div className="flex gap-2">
           <Button
-            className="bg-blue-600 text-white"
+            className="bg-[#0ca678] text-white hover:bg-[#12b886]"
             onClick={submitVideo}
             disabled={!videoFile || loading}
           >
@@ -358,7 +351,7 @@ const UploadVideoArea = () => {
           </Button>
           <Button
             variant="outline"
-            className="border-gray-300 text-black"
+            className="border-[#12b886] text-[#0ca678] hover:bg-[#e6fcf5]"
             onClick={removeVideo}
           >
             Clear
@@ -368,16 +361,16 @@ const UploadVideoArea = () => {
           <div className="mt-4">
             <div>
               <div className="flex justify-between mb-1">
-                <span className="text-base font-medium text-blue-700 dark:text-white">
+                <span className="text-base font-medium text-[#0ca678]">
                   Upload
                 </span>
-                <span className="text-sm font-medium text-blue-700 dark:text-white">
+                <span className="text-sm font-medium text-[#0ca678]">
                   {percentage}%
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+              <div className="w-full bg-[#e6fcf5] rounded-full h-2.5">
                 <div
-                  className="bg-blue-600 h-2.5 rounded-full"
+                  className="bg-[#0ca678] h-2.5 rounded-full"
                   style={{
                     width: `${percentage}%`,
                     transition: "width 0.5s ease-in-out",
