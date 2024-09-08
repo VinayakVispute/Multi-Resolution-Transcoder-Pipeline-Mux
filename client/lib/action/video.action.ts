@@ -2,7 +2,6 @@
 import prisma from "@/lib/prisma";
 import { currentUser } from "@clerk/nextjs/server";
 import { createUploadVideoInDbParams, UploadedVideo } from "@/interface";
-import { revalidatePath } from "next/cache";
 import { EventStatus, Status } from "@prisma/client";
 import { createNotification } from "./notification.action";
 
@@ -54,7 +53,6 @@ export const createdUploadedVideoInDb = async (
       );
     }
 
-    revalidatePath("/History");
     return JSON.parse(
       JSON.stringify({
         success: true,
@@ -105,6 +103,9 @@ export const fetchUploadedVideos = async (): Promise<{
           },
         },
       },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
 
     return JSON.parse(
@@ -131,14 +132,22 @@ export const createAndLinkTranscodedVideos = async (
   status: Status,
   videoData: Array<{ name: string; url: string; resolution: string }>
 ) => {
-  const userId = "332c6eed-9980-4f75-a43c-7f461b5caf1c";
   try {
-    // Step 1: Create multiple Video records
-    // const user = await currentUser();
-    // if (!user || !user.privateMetadata || !user.privateMetadata.userId) {
-    //   throw new Error("User authentication failed");
-    // }
-    // const userId = user.privateMetadata.userId as string;
+    const uploadedVideo = await prisma.uploadedVideo.findUnique({
+      where: { id: uniqueId },
+      include: {
+        user: {
+          select: {
+            clerkId: true,
+          },
+        },
+      },
+    });
+
+    if (!uploadedVideo || !uploadedVideo.userId) {
+      throw new Error("Failed to get user id");
+    }
+    const userId = uploadedVideo.user?.clerkId;
 
     const createdVideos = await prisma.video.createManyAndReturn({
       data: videoData.map((video) => ({
@@ -163,17 +172,17 @@ export const createAndLinkTranscodedVideos = async (
 
     // Step 2: Create multiple TranscodedVideo records referencing the video IDs
 
-    const tempObj = videoIds.map((videoId) => ({
+    const transcodedVideosData = videoIds.map((videoId) => ({
       sourceVideoId: uniqueId,
       videoId: videoId,
     }));
 
-    console.log("tempObj", tempObj);
-    const transcodedVideos = await prisma.transcodedVideo.createMany({
-      data: tempObj,
+    console.log("transcodedVideosData", transcodedVideosData);
+    const { count } = await prisma.transcodedVideo.createMany({
+      data: transcodedVideosData,
     });
 
-    if (transcodedVideos.count === 0) {
+    if (count === 0) {
       throw new Error("Failed to create transcoded videos");
     }
 
@@ -197,24 +206,21 @@ export const createAndLinkTranscodedVideos = async (
     }
     await createNotification({
       uploadedVideoId: uniqueId,
-      userId: userId,
       eventStatus: EventStatus.FINISHED,
     });
 
-    revalidatePath("/History");
     return {
       success: true,
       message:
         "Transcoded videos created and uploaded video updated successfully",
+      data: userId,
     };
   } catch (error: any) {
     console.error("Error in createAndLinkTranscodedVideos:", error);
     await createNotification({
       uploadedVideoId: uniqueId,
-      userId: userId,
       eventStatus: EventStatus.FINISHED,
     });
-    revalidatePath("/History");
-    return { success: false, message: error.message };
+    return { success: false, message: error.message, data: null };
   }
 };

@@ -17,12 +17,16 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
-import { RefreshCw, FileDown, Eye } from "lucide-react"
+import { RefreshCw, FileDown, Eye, Bell } from "lucide-react"
 import { fetchUploadedVideos } from "@/lib/action/video.action"
 import { UploadedVideo, VideoDialogProps } from "@/interface"
 import { statusColor } from "@/lib/utils"
 import VideoResolutionOption from "@/components/shared/VideoResolutionOption"
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react"
+import Pusher from 'pusher-js'
+import { Status } from "@prisma/client"
+import { useNotificationHistory } from "@/context/NotificationHistoryContext";
+
 
 const VideoDialog = ({ TranscodedVideos, VideoDetails }: VideoDialogProps) => {
   return (
@@ -60,37 +64,8 @@ const VideoDialog = ({ TranscodedVideos, VideoDetails }: VideoDialogProps) => {
 }
 
 export default function History() {
-  const [videoData, setVideoData] = useState<{ uploadedVideos: UploadedVideo[] } | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
-
-
-  const fetchVideos = async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const response = await fetchUploadedVideos()
-      if (!response.success) {
-        console.error(response.message)
-        setError(response.message)
-        return;
-      }
-      setVideoData({ uploadedVideos: response.data })
-    } catch (error: any) {
-      console.error(error.message)
-      setError(error.message)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-
-    fetchVideos()
-  }, [])
-
-
+  const { isLoading, error, videoData, fetchVideos }: { isLoading: boolean, error: any, videoData: { uploadedVideos: UploadedVideo[] } | null, fetchVideos: () => Promise<void> } = useNotificationHistory()
 
   if (isLoading) {
     return (
@@ -125,17 +100,19 @@ export default function History() {
   return (
     <div className="flex flex-col w-full min-h-screen bg-[#e6fcf5]">
       <header className="bg-gradient-to-r from-[#0ca678] to-[#12b886] text-white px-6 py-8 shadow-lg">
-        <div className="container mx-auto">
-          <h2 className="text-3xl font-bold mb-4">Video Processing History</h2>
-          <div className="flex items-center gap-4">
-            <Button variant="secondary" size="lg" className="bg-white text-[#0ca678] hover:bg-[#e6fcf5] transition-all hover:scale-105">
-              <FileDown className="h-5 w-5 mr-2" />
-              <span>Export</span>
-            </Button>
-            <Button variant="secondary" size="lg" className="bg-white text-[#0ca678] hover:bg-[#e6fcf5] transition-all hover:scale-105" onClick={fetchVideos}>
-              <RefreshCw className="h-5 w-5 mr-2" />
-              <span>Refresh</span>
-            </Button>
+        <div className="container mx-auto flex justify-between items-center">
+          <div>
+            <h2 className="text-3xl font-bold mb-4">Video Processing History</h2>
+            <div className="flex items-center gap-4">
+              <Button variant="secondary" size="lg" className="bg-white text-[#0ca678] hover:bg-[#e6fcf5] transition-all hover:scale-105">
+                <FileDown className="h-5 w-5 mr-2" />
+                <span>Export</span>
+              </Button>
+              <Button variant="secondary" size="lg" className="bg-white text-[#0ca678] hover:bg-[#e6fcf5] transition-all hover:scale-105" onClick={fetchVideos}>
+                <RefreshCw className="h-5 w-5 mr-2" />
+                <span>Refresh</span>
+              </Button>
+            </div>
           </div>
         </div>
       </header>

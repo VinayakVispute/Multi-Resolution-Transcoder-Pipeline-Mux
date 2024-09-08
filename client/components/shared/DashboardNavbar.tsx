@@ -8,7 +8,6 @@ import {
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import {
   SignedOut,
@@ -18,20 +17,27 @@ import {
   SignInButton,
 } from "@clerk/nextjs";
 import { Bell, MountainIcon, Menu } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import NotificationDashboard from "./NotificationDashboard";
+import { useNotificationHistory } from "@/context/NotificationHistoryContext";
+import { NotificationState } from "@/interface";
 
 const DashboardNavbar = () => {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
   const navItems = [
     { href: "/", label: "Home" },
     { href: "/History", label: "History" },
     { href: "/Profile", label: "Profile" },
     { href: "/Dashboard", label: "Dashboard" },
   ];
+
+  const { notifications
+  }: { notifications: NotificationState[] | [] } = useNotificationHistory()
+
+
+  console.log(notifications, notifications.length)
 
   return (
     <header className="bg-gradient-to-r from-[#0ca678] to-[#12b886] text-white sticky top-0 z-20 px-4 sm:px-6 py-3 shadow-md transition-all duration-300">
@@ -60,34 +66,19 @@ const DashboardNavbar = () => {
             <div className="flex items-center gap-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative text-white hover:bg-[#0ca678]/20">
+                  <Button variant="ghost" size="icon" className="relative text-whi te hover:bg-[#0ca678]/20">
                     <Bell className="h-5 w-5" />
                     <span className="absolute -top-1 -right-1 flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4">
-                      3
+                      {notifications.length >= 0 ? notifications.length : 0}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuContent align="end" >
                   <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {[
-                    { title: "New video uploaded", desc: "John Doe uploaded a new video" },
-                    { title: "New comment", desc: "Jane Smith commented on your video" },
-                    { title: "Video processed", desc: "Your video has been processed" },
-                  ].map((notification, index) => (
-                    <DropdownMenuItem key={index} className="p-4">
-                      <div className="flex items-center gap-4">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src="/placeholder-user.jpg" alt="User" />
-                          <AvatarFallback>U</AvatarFallback>
-                        </Avatar>
-                        <div className="grid gap-0.5">
-                          <div className="font-medium">{notification.title}</div>
-                          <div className="text-sm text-gray-500">{notification.desc}</div>
-                        </div>
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
+                  {notifications && notifications.length > 0 && (
+                    <NotificationDashboard notifications={notifications} />
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
               <UserButton

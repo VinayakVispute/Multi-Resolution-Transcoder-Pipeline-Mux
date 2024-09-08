@@ -1,16 +1,10 @@
-import { Video } from "@prisma/client";
+import { EventStatus, Status, Video } from "@prisma/client";
 
 export interface createUploadVideoInDbParams {
   id: string;
   title: string;
   videoUrl: string;
   resolution: string;
-}
-
-enum Status {
-  Success = "FINISHED",
-  Pending = "PENDING",
-  Failed = "FAILED",
 }
 
 export interface ITranscodedVideo {
@@ -55,3 +49,17 @@ export interface UpdateStatusWebhookBody {
     transcodedVideo: transcodedVideoWebhook[] | [];
   };
 }
+
+export interface fetchNotificationsParams {
+  userId: string;
+}
+
+export type NotificationState = {
+  id: string;
+  userId: string;
+  uploadedVideoId: string;
+  event: EventStatus;
+  read: boolean;
+  createdAt: Date;
+  uploadedVideo: UploadedVideo;
+};
