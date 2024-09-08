@@ -9,6 +9,10 @@ import {
 } from "@/components/ui/sheet"
 
 const NavBar = () => {
+    const navBarConstants = [
+        { name: "How It Works", link: "/How-it-works" },
+        { name: "Technology", link: "/Technology" }
+    ]
     return (
         <header className="w-full bg-[#0ca678] text-white py-4 px-6 md:px-12 shadow-md">
             <div className="container mx-auto flex items-center justify-between">
@@ -17,24 +21,24 @@ const NavBar = () => {
                     <span className="text-lg font-bold">Video Processing</span>
                 </Link>
                 <nav className="hidden md:flex items-center gap-6">
-                    {["How It Works", "Features", "Benefits", "Technology"].map((item) => (
+                    {navBarConstants.map((item) => (
                         <Link
-                            key={item}
-                            href={`#${item.toLowerCase().replace(/\s+/g, '-')}`}
+                            key={item.name}
+                            href={item.link}
                             className="text-sm font-medium hover:text-[#e6fcf5] transition-colors"
                         >
-                            {item}
+                            {item.name}
                         </Link>
                     ))}
                     <SignedIn>
                         <Link
-                            href="/profile"
+                            href="/Profile"
                             className="text-sm font-medium hover:text-[#e6fcf5] transition-colors"
                         >
                             Profile
                         </Link>
                         <Link
-                            href="/dashboard"
+                            href="/Dashboard"
                             className="bg-[#ff6b6b] hover:bg-[#fa5252] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                         >
                             Dashboard

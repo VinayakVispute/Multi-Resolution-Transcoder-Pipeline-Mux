@@ -102,9 +102,25 @@ const UploadVideoArea = () => {
     disabled: videoFile !== null,
   });
 
+  const isVideoResolutionDecodable = (resolution: string) => {
+    if (resolution === "720p" || resolution === "1080p" || resolution === "4K") {
+      console.log(true)
+      return true;
+    }
+    console.log(false)
+    return false;
+  }
+
   const submitVideo = async () => {
     const videoId = `${Date.now()}-${videoName}`;
-
+    if (!videoFile || !videoName || !videoResolution) {
+      toast.error("Please fill in all the fields");
+      return;
+    }
+    if (!isVideoResolutionDecodable(videoResolution)) {
+      toast.error("Please upload a video with 720p, 1080p, or 4K resolution");
+      return;
+    }
     const formData = new FormData();
     formData.append("video", videoFile as File);
     formData.append("videoName", videoName as string);

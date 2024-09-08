@@ -1,9 +1,26 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import NavBar from "@/components/shared/NavBar";
-import { CloudCogIcon, CloudIcon, GitlabIcon, LinkedinIcon, NetworkIcon, SignalMediumIcon, TwitterIcon, CheckIcon } from "lucide-react";
+import { CheckIcon } from "lucide-react";
+import Image from "next/image";
+import Marquee from "@/components/ui/marquee";
+
 
 export default function Home() {
+
+  const icons = [
+    { label: "Azure", sourcePath: "/assets/Microsoft_Azure.svg" },
+    { label: "Next.js", sourcePath: "/assets/Nextjs-logo.svg" },
+    { label: "TypeScript", sourcePath: "/assets/ts-logo-256.svg" },
+    { label: "NodeJs", sourcePath: "/assets/nodejsStackedDark.svg" },
+    { label: "Prisma", sourcePath: "/assets/Prisma-IndigoLogo.svg" },
+    { label: "PostgreSQL", sourcePath: "/assets/postgresql-ar21.svg" },
+    { label: "Docker", sourcePath: "/assets/docker-logo-blue.svg" },
+    { label: "ClerkJs", sourcePath: "/assets/clerk-logo-dark-accent.svg" },
+    { label: "Pusher", sourcePath: "/assets/pusher-logo-0576fd4af5c38706f96f632235f3124a.svg" },
+
+  ]
+
   return (
     <div className="flex min-h-[100dvh] flex-col bg-[#e6fcf5]">
       <NavBar />
@@ -13,12 +30,12 @@ export default function Home() {
             <div className="relative z-10 grid gap-6 sm:gap-10 lg:grid-cols-2 lg:items-center">
               <div className="space-y-4 sm:space-y-6">
                 <h1 className="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-                  Scalable Video Processing with Azure
+                  Scalable Video Processing with Microsoft Azure
                 </h1>
                 <p className="text-lg sm:text-xl">Unlock the power of cloud-based video processing</p>
                 <div>
                   <Link
-                    href="#"
+                    href="/Dashboard"
                     className="inline-flex items-center justify-center rounded-md bg-[#ff6b6b] px-5 py-3 text-base font-medium text-white shadow-lg transition-all hover:bg-[#fa5252] focus:outline-none focus:ring-2 focus:ring-[#ff8787] focus:ring-offset-2 hover:scale-105"
                   >
                     Get Started
@@ -32,11 +49,11 @@ export default function Home() {
                 </div>
                 <div className="relative">
                   <img
-                    src="/placeholder.svg?height=600&width=600"
-                    width={600}
-                    height={600}
+                    src="/assets/HeaderSection.png"
+                    width={1200}
+                    height={1200}
                     alt="Hero"
-                    className="mx-auto h-full w-full max-w-[400px] rounded-lg object-cover shadow-2xl transition-transform hover:scale-105"
+                    className="mx-auto h-full w-full rounded-lg object-cover  transition-transform hover:scale-105"
                   />
                 </div>
               </div>
@@ -49,7 +66,7 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
                 <img
-                  src="/placeholder.svg?height=400&width=600"
+                  src="/assets/heroSection-1.png"
                   width={600}
                   height={400}
                   alt="How It Works"
@@ -93,21 +110,7 @@ export default function Home() {
               Powered by the latest Azure technologies.
             </p>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8 mt-12">
-            {[
-              { icon: CloudIcon, label: "Azure" },
-              { icon: SignalMediumIcon, label: "Media Services" },
-              { icon: CloudCogIcon, label: "Cognitive Services" },
-              { icon: NetworkIcon, label: "Content Delivery Network" },
-            ].map((item, index) => (
-              <div key={index} className="flex flex-col items-center space-y-2">
-                <div className="bg-white rounded-full p-4 shadow-lg transition-all hover:scale-110">
-                  <item.icon className="h-8 w-8 text-[#0ca678]" />
-                </div>
-                <p className="text-[#12b886]">{item.label}</p>
-              </div>
-            ))}
-          </div>
+          <Marquee icons={icons} />
           <div className="absolute bottom-0 left-0 right-0 h-32 bg-white" style={{ clipPath: "polygon(0 0, 100% 100%, 100% 100%, 0 100%)" }}></div>
         </section>
         <section className="w-full py-12 md:py-24 lg:py-32 bg-white relative">
@@ -118,25 +121,37 @@ export default function Home() {
                 Streamline your video processing workflow with our cloud-based solution.
               </p>
             </div>
-            <img
-              src="/placeholder.svg?height=300&width=1270"
-              width={1270}
-              height={300}
-              alt="Workflow"
-              className="mx-auto aspect-[3/1] overflow-hidden rounded-xl object-cover shadow-2xl transition-transform hover:scale-105"
-            />
+            <div className="container mx-auto px-4 my-8">
+              <div className="relative w-full max-w-6xl mx-auto aspect-[3548/1594] bg-gray-200 rounded-[2rem] shadow-2xl p-4 overflow-hidden">
+                <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-20 h-1 bg-gray-400 rounded-full"></div>
+                <div className="absolute inset-4 bg-white rounded-[1.75rem] overflow-hidden">
+                  <div className="relative w-full h-full">
+                    <Image
+                      src="/assets/workflow.png"
+                      alt="Workflow"
+                      width={3548}
+                      height={1594}
+                      className="transition-transform hover:scale-105"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="absolute -bottom-[12px] left-0 right-0 h-32 bg-[#e6fcf5]" style={{ clipPath: "polygon(0 100%, 100% 0, 100% 100%, 0 100%)" }}></div>
+          <div
+            className="absolute -bottom-[12px] left-0 right-0 h-32 bg-[#e6fcf5]"
+            style={{ clipPath: "polygon(0 100%, 100% 0, 100% 100%, 0 100%)" }}
+          ></div>
         </section>
         <section className="py-20 sm:py-32 px-4 md:px-6 lg:px-8 bg-[#e6fcf5] relative">
           <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-8">
             <div className="flex justify-center">
-              <img
-                src="/placeholder.svg?height=300&width=300"
+              <Image
+                src="https://avatars.githubusercontent.com/u/93467074?s=400&u=ee87a4ccafbf6192b3ad643c73bc6a2d50b13c19&v=4"
                 width={300}
                 height={300}
                 alt="Creator"
-                className="w-full max-w-[200px] sm:max-w-[300px] rounded-full shadow-2xl transition-transform hover:scale-105"
+                className="w-full  rounded-full shadow-2xl transition-transform hover:scale-105"
               />
             </div>
             <div className="space-y-4">
@@ -144,17 +159,20 @@ export default function Home() {
               <p className="text-lg sm:text-xl md:text-2xl text-[#12b886]">
                 Meet the mind behind the Scalable Video Processing with Azure solution.
               </p>
-              <p className="text-[#0ca678]">
-                John Doe is a seasoned cloud architect with a passion for building scalable and efficient video processing
-                solutions. With years of experience in Azure and media technologies, he has developed this cutting-edge
-                platform to empower businesses to effortlessly manage and deliver their video content.
+              <p className="text-[#0ca678] text-justify">
+                Vinayak Vispute is a skilled software engineer with a strong focus on building innovative AI-powered applications. With expertise in cloud solutions, web development, and media processing, he is dedicated to creating seamless, intelligent platforms that transform user experiences and streamline complex workflows.
               </p>
               <div className="flex gap-4">
-                {[TwitterIcon, LinkedinIcon, GitlabIcon].map((Icon, index) => (
-                  <Link key={index} href="#" className="text-[#0ca678] hover:text-[#12b886] transition-colors">
-                    <Icon className="h-6 w-6" />
-                  </Link>
-                ))}
+
+                <Link href="https://github.com/VinayakVispute" className="text-[#0ca678] hover:text-[#12b886] transition-colors">
+                  <Image src="/assets/github-mark.svg" width={38} height={38} alt="github-vinayak" />
+                </Link>
+                <Link href="https://x.com/VinayakVispute7" className="text-[#0ca678] hover:text-[#12b886] transition-colors">
+                  <Image src="/assets/twitter.png" width={38} height={38} alt="twitter-vinayak" />
+                </Link>
+                <Link href="" className="text-[#0ca678] hover:text-[#12b886] transition-colors">
+                  <Image src="/assets/In-Blue-96.png" width={38} height={38} alt="linkedin-vinayak" />
+                </Link>
               </div>
             </div>
           </div>
@@ -170,7 +188,7 @@ export default function Home() {
             </p>
             <div className="mt-6 flex justify-center gap-4">
               <Button variant="secondary" className="bg-[#ff6b6b] text-white hover:bg-[#fa5252] transition-all hover:scale-105">Learn More</Button>
-              <Button variant="outline" className="border-white text-white hover:bg-white hover:text-[#0ca678] transition-all hover:scale-105">Contact Us</Button>
+              <Button variant="outline" className="border-white text-green-800 hover:bg-white hover:text-[#0ca678] transition-all hover:scale-105">Contact Us</Button>
             </div>
           </div>
           <div className="absolute top-0 left-0 right-0 h-32 bg-[#e6fcf5]" style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 0)" }}></div>
