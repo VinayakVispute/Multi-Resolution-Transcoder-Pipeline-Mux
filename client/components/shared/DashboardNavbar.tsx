@@ -31,6 +31,9 @@ const DashboardNavbar = () => {
     { href: "/History", label: "History" },
     { href: "/Profile", label: "Profile" },
     { href: "/Dashboard", label: "Dashboard" },
+    {
+      href: "/Policy", label: "Policy"
+    }
   ];
 
   const { notifications

@@ -14,15 +14,18 @@ datasource db {
 }
 
 model User {
-  id            String          @id @default(uuid())
-  clerkId       String          @unique
-  name          String
-  userName      String          @unique
-  email         String
-  picture       String          @default("https://res.cloudinary.com/dkawvablj/image/upload/v1725119468/Core/mwpxqnn5viel4zddmng7.jpg")
-  joinedAt      DateTime        @default(now())
-  UploadedVideo UploadedVideo[]
-  Notifications Notifications[]
+  id               String          @id @default(uuid())
+  clerkId          String          @unique
+  name             String
+  userName         String          @unique
+  email            String
+  picture          String          @default("https://res.cloudinary.com/dkawvablj/image/upload/v1725119468/Core/mwpxqnn5viel4zddmng7.jpg")
+  joinedAt         DateTime        @default(now())
+  maxVideosAllowed Int             @default(1)
+  videosUploaded   Int             @default(0)
+  apiKey           String?         @unique
+  UploadedVideo    UploadedVideo[]
+  Notifications    Notifications[]
 }
 
 model Video {

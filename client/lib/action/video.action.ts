@@ -15,59 +15,57 @@ export const createdUploadedVideoInDb = async (
 
     if (!user || !user.privateMetadata || !user.privateMetadata.userId) {
       console.error("User authentication failed");
-      return JSON.parse(
-        JSON.stringify({
-          success: false,
-          message: "User authentication failed",
-        })
-      );
+      return {
+        success: false,
+        message: "User authentication failed",
+      };
     }
     const userId = user.privateMetadata.userId as string;
-
     const { id, title, videoUrl, resolution } = params;
 
-    const newVideo = await prisma.video.create({
-      data: {
-        title: title,
-        videoUrl: videoUrl,
-        resolution: resolution,
-      },
+    // Use a transaction to combine both operations atomically
+    const result = await prisma.$transaction(async (prisma) => {
+      // Create the new video
+      const newVideo = await prisma.video.create({
+        data: {
+          title: title,
+          videoUrl: videoUrl,
+          resolution: resolution,
+        },
+      });
+
+      // Create the uploaded video linked to the user and new video
+      const newUploadedVideo = await prisma.uploadedVideo.create({
+        data: {
+          id: id,
+          userId: userId,
+          status: "PENDING",
+          videoId: newVideo.id, // Link the newly created Video
+        },
+      });
+
+      // Increment videos uploaded by the user
+      const incrementResponse = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          videosUploaded: { increment: 1 },
+        },
+      });
+      console.log("incrementResponse", incrementResponse);
+      return newUploadedVideo;
     });
 
-    const newUploadedVideo = await prisma.uploadedVideo.create({
-      data: {
-        id: id,
-        userId: userId,
-        status: "PENDING",
-        videoId: newVideo.id, // Link the newly created Video
-      },
-    });
-
-    if (!newUploadedVideo) {
-      console.error("Failed to create new uploaded video");
-      return JSON.parse(
-        JSON.stringify({
-          success: false,
-          message: "Failed to create new uploaded video",
-        })
-      );
-    }
-
-    return JSON.parse(
-      JSON.stringify({
-        success: true,
-        data: newUploadedVideo,
-        message: "Video uploaded successfully",
-      })
-    );
+    return {
+      success: true,
+      data: result,
+      message: "Video uploaded and user video count updated successfully",
+    };
   } catch (error) {
     console.error("An error occurred:", error);
-    return JSON.parse(
-      JSON.stringify({
-        success: false,
-        message: "Failed to upload video",
-      })
-    );
+    return {
+      success: false,
+      message: "Failed to upload video and update user",
+    };
   }
 };
 
@@ -89,7 +87,7 @@ export const fetchUploadedVideos = async (): Promise<{
         })
       );
     }
-    const userId = user.privateMetadata.userId;
+    const userId = user.privateMetadata.userId as string;
 
     const uploadedVideos = await prisma.uploadedVideo.findMany({
       where: {
@@ -105,6 +103,17 @@ export const fetchUploadedVideos = async (): Promise<{
       },
       orderBy: {
         createdAt: "desc",
+      },
+    });
+
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        videosUploaded: {
+          increment: 1,
+        },
       },
     });
 
