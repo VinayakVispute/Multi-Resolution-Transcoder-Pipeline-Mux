@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import { Button } from "@/components/ui/button"
 import {
@@ -17,16 +17,12 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog"
-import { RefreshCw, FileDown, Eye, Bell } from "lucide-react"
-import { fetchUploadedVideos } from "@/lib/action/video.action"
+import { RefreshCw, FileDown, Eye } from "lucide-react"
 import { UploadedVideo, VideoDialogProps } from "@/interface"
 import { statusColor } from "@/lib/utils"
 import VideoResolutionOption from "@/components/shared/VideoResolutionOption"
-import { useEffect, useState } from "react"
-import Pusher from 'pusher-js'
-import { Status } from "@prisma/client"
-import { useNotificationHistory } from "@/context/NotificationHistoryContext";
-
+import { useNotificationHistory } from "@/context/NotificationHistoryContext"
+import { Video } from "@prisma/client"
 
 const VideoDialog = ({ TranscodedVideos, VideoDetails }: VideoDialogProps) => {
   return (
@@ -64,38 +60,9 @@ const VideoDialog = ({ TranscodedVideos, VideoDetails }: VideoDialogProps) => {
 }
 
 export default function History() {
+  const { isLoading, error, videoData, fetchVideos } = useNotificationHistory()
 
-  const { isLoading, error, videoData, fetchVideos }: { isLoading: boolean, error: any, videoData: { uploadedVideos: UploadedVideo[] } | null, fetchVideos: () => Promise<void> } = useNotificationHistory()
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-[#0ca678] to-[#12b886]">
-        <div className="text-white text-2xl font-bold animate-pulse">Loading...</div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-[#0ca678] to-[#12b886]">
-        <div className="text-center text-white">
-          <h2 className="text-2xl font-bold mb-4">Failed to fetch videos</h2>
-          <p className="text-lg">{error}</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!videoData || videoData.uploadedVideos.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-[#0ca678] to-[#12b886]">
-        <div className="text-center text-white">
-          <h2 className="text-2xl font-bold mb-4">No videos uploaded yet</h2>
-          <p className="text-lg">Upload a video to see it here</p>
-        </div>
-      </div>
-    )
-  }
+  const emptyRows = Array(5).fill(null)
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-[#e6fcf5]">
@@ -130,38 +97,60 @@ export default function History() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {videoData.uploadedVideos.map((video, index) => (
-                <TableRow key={video.id} className="hover:bg-[#e6fcf5] transition-colors">
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell className="font-medium">{video.video.title}</TableCell>
-                  <TableCell>{new Date(video.video.uploadedAt).toLocaleString()}</TableCell>
-                  <TableCell>{video.video.resolution}</TableCell>
-                  <TableCell>
-                    <Badge className={`${statusColor[video.status]} shadow-md`}>
-                      {video.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={video.status !== "FINISHED"}
-                          className="bg-[#0ca678] text-white hover:bg-[#12b886] transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Transcoded Video
-                        </Button>
-                      </DialogTrigger>
-                      <VideoDialog
-                        TranscodedVideos={video.TranscodedVideo}
-                        VideoDetails={video}
-                      />
-                    </Dialog>
+              {isLoading ? (
+                emptyRows.map((_, index) => (
+                  <TableRow key={index} className="animate-pulse">
+                    <TableCell colSpan={6}>
+                      <div className="h-8 bg-gray-200 rounded"></div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : error ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-red-500">
+                    Error: {error}
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : !videoData || videoData.uploadedVideos.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center">
+                    No videos uploaded yet
+                  </TableCell>
+                </TableRow>
+              ) : (
+                videoData.uploadedVideos.map((video: UploadedVideo, index: number) => (
+                  <TableRow key={video.id} className="hover:bg-[#e6fcf5] transition-colors">
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell className="font-medium">{video.video.title}</TableCell>
+                    <TableCell>{new Date(video.video.uploadedAt).toLocaleString()}</TableCell>
+                    <TableCell>{video.video.resolution}</TableCell>
+                    <TableCell>
+                      <Badge className={`${statusColor[video.status]} shadow-md`}>
+                        {video.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={video.status !== "FINISHED"}
+                            className="bg-[#0ca678] text-white hover:bg-[#12b886] transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Transcoded Video
+                          </Button>
+                        </DialogTrigger>
+                        <VideoDialog
+                          TranscodedVideos={video.TranscodedVideo}
+                          VideoDetails={video}
+                        />
+                      </Dialog>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>

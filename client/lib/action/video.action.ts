@@ -106,17 +106,6 @@ export const fetchUploadedVideos = async (): Promise<{
       },
     });
 
-    await prisma.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        videosUploaded: {
-          increment: 1,
-        },
-      },
-    });
-
     return JSON.parse(
       JSON.stringify({
         success: true,

@@ -185,6 +185,7 @@ async function init() {
       },
     });
   } catch (error) {
+    console.error("Error during video processing:", error);
     await sendWebhook({
       success: false,
       message: `Error during video processing: ${error.message}`,
@@ -193,8 +194,6 @@ async function init() {
         uniqueId: uniqueid,
       },
     });
-
-    console.error("Error during video processing:", error);
   } finally {
     process.exit(0);
   }

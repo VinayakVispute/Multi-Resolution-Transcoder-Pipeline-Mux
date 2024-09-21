@@ -5,7 +5,7 @@ import {
   ContainerInstanceManagementClient,
   ContainerGroup,
 } from "@azure/arm-containerinstance";
-import { DefaultAzureCredential } from "@azure/identity";
+import { ClientSecretCredential } from "@azure/identity";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -23,7 +23,28 @@ const SUBSCRIPTION_ID = process.env.SUBSCRIPTION_ID;
 const ACR_USERNAME = process.env.ACR_USERNAME;
 const ACR_PASSWORD = process.env.ACR_PASSWORD;
 const QUEUE_NAME = process.env.QUEUE_NAME;
-const WEBHOOK_UPLOADSTATUS_URL = process.env.WEBHOOK_UPLOADSTATUS_URL;
+const WEBHOOK_UPLOADSTATUS_URL = "https://transcoder-pipeline.vercel.app";
+const AZURE_TENANT_ID = process.env.AZURE_TENANT_ID;
+const AZURE_CLIENT_ID = process.env.AZURE_CLIENT_ID;
+const AZURE_CLIENT_SECRET = process.env.AZURE_CLIENT_SECRET;
+
+console.log("Environment variables:", {
+  AZURE_STORAGE_CONNECTION_STRING,
+  AZURE_RESOURCE_GROUP,
+  CONTAINER_GROUP_NAME,
+  AZURE_CONTAINER_REGISTRY_SERVER,
+  CONTAINER_NAME,
+  BUCKET_NAME,
+  OUTPUT_VIDEO_BUCKET,
+  SUBSCRIPTION_ID,
+  ACR_USERNAME,
+  ACR_PASSWORD,
+  QUEUE_NAME,
+  WEBHOOK_UPLOADSTATUS_URL,
+  AZURE_TENANT_ID,
+  AZURE_CLIENT_ID,
+  AZURE_CLIENT_SECRET,
+});
 
 if (
   !AZURE_STORAGE_CONNECTION_STRING ||
@@ -37,21 +58,33 @@ if (
   !ACR_USERNAME ||
   !ACR_PASSWORD ||
   !QUEUE_NAME ||
-  !WEBHOOK_UPLOADSTATUS_URL
+  !WEBHOOK_UPLOADSTATUS_URL ||
+  !AZURE_TENANT_ID ||
+  !AZURE_CLIENT_ID ||
+  !AZURE_CLIENT_SECRET
 ) {
   throw new Error("Required environment variables are missing.");
 }
+
+// Authenticate using ClientSecretCredential
+const credential = new ClientSecretCredential(
+  AZURE_TENANT_ID || "",
+  AZURE_CLIENT_ID || "",
+  AZURE_CLIENT_SECRET || ""
+);
 
 const queueClient = new QueueClient(
   AZURE_STORAGE_CONNECTION_STRING,
   QUEUE_NAME
 );
+
+// Use the ClientSecretCredential to authenticate with ContainerInstanceManagementClient
 const client = new ContainerInstanceManagementClient(
-  new DefaultAzureCredential(),
-  SUBSCRIPTION_ID
+  credential,
+  SUBSCRIPTION_ID || ""
 );
 
-// Set up Express and HTTP server
+// Utility functions
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -126,22 +159,17 @@ async function spinUpContainer(
         `Starting container group: ${CONTAINER_NAME}-${containerCounter}`
       );
     }
-    if (!AZURE_RESOURCE_GROUP) {
-      console.error("Resource group is not defined");
-      throw new Error("Resource group is not defined");
-    }
 
     const containerGroup =
       await client.containerGroups.beginCreateOrUpdateAndWait(
-        AZURE_RESOURCE_GROUP,
+        AZURE_RESOURCE_GROUP || "",
         containerGroupName,
         {
           location: "eastus",
           osType: "Linux",
           containers: [
             {
-              name:
-                `${CONTAINER_NAME}-${containerCounter}` || "video-processor",
+              name: `${CONTAINER_NAME}-${containerCounter}`,
               image: `${AZURE_CONTAINER_REGISTRY_SERVER}/${CONTAINER_NAME}:latest`,
               resources: {
                 requests: {
@@ -157,10 +185,7 @@ async function spinUpContainer(
                 { name: "BUCKET_NAME", value: BUCKET_NAME },
                 { name: "INPUT_VIDEO", value: blobName },
                 { name: "OUTPUT_VIDEO_BUCKET", value: OUTPUT_VIDEO_BUCKET },
-                {
-                  name: "WEBHOOK_URL",
-                  value: WEBHOOK_UPLOADSTATUS_URL,
-                },
+                { name: "WEBHOOK_URL", value: WEBHOOK_UPLOADSTATUS_URL },
               ],
             },
           ],
@@ -175,6 +200,41 @@ async function spinUpContainer(
         }
       );
 
+    // const containerGroup =
+    //   await client.containerGroups.beginCreateOrUpdateAndWait(
+    //     AZURE_RESOURCE_GROUP || "",
+    //     containerGroupName,
+    //     {
+    //       location: "eastus",
+    //       osType: "Linux",
+    //       containers: [
+    //         {
+    //           name: `${CONTAINER_NAME}-${containerCounter}`,
+    //           // Fetch the image from Docker Hub by specifying the full image name and tag
+    //           image: "vinayakvispute/video-encoder-lastest:latest", // Replace 'dockerhubusername' with the Docker Hub username or leave blank for official images
+    //           resources: {
+    //             requests: {
+    //               cpu: 2,
+    //               memoryInGB: 4,
+    //             },
+    //           },
+    //           environmentVariables: [
+    //             {
+    //               name: "AZURE_STORAGE_CONNECTION_STRING",
+    //               value: AZURE_STORAGE_CONNECTION_STRING,
+    //             },
+    //             { name: "BUCKET_NAME", value: BUCKET_NAME },
+    //             { name: "INPUT_VIDEO", value: blobName },
+    //             { name: "OUTPUT_VIDEO_BUCKET", value: OUTPUT_VIDEO_BUCKET },
+    //             { name: "WEBHOOK_URL", value: WEBHOOK_UPLOADSTATUS_URL },
+    //           ],
+    //         },
+    //       ],
+    //       // Remove the imageRegistryCredentials as Docker Hub doesn't require it for public images
+    //       restartPolicy: "OnFailure",
+    //     }
+    //   );
+
     console.log(`Container instance started: ${containerGroupName}`);
 
     // Delete the message from the queue after the container has started successfully
@@ -186,7 +246,6 @@ async function spinUpContainer(
     }
   } catch (error) {
     console.error("Error starting the container:", error);
-
     throw error;
   }
 }
@@ -198,7 +257,7 @@ async function init() {
       const response: QueueReceiveMessageResponse =
         await queueClient.receiveMessages({
           numberOfMessages: 1,
-          visibilityTimeout: 70, // It will wait for 70 seconds before making the message available for processing again
+          visibilityTimeout: 70, // Wait 70 seconds before the message is available again
         });
 
       const {
