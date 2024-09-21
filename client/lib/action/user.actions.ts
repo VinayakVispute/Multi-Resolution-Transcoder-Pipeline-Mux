@@ -25,10 +25,12 @@ export const isUserEligibleForUpload = async (
 
   // If user not found, or they have already uploaded the max allowed videos
   if (!user || user.videosUploaded >= user.maxVideosAllowed) {
+    console.error("User has reached the maximum allowed video uploads");
     return false;
   }
 
   // If user is eligible to upload, return true
+  console.log("User is eligible to upload the video");
   return true;
 };
 

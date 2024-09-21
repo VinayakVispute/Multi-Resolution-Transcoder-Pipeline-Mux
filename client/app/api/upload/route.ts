@@ -1,3 +1,5 @@
+export const runtime = "edge";
+
 import { NextResponse } from "next/server";
 import {
   BlobServiceClient,
@@ -52,6 +54,7 @@ export async function POST(req: Request) {
     console.log(`Is user eligible for upload? ${userEligible}`);
 
     if (!userEligible) {
+      console.error("User is not eligible to upload this video");
       throw new Error(
         "User is not eligible to upload this video, Check your plan"
       );
