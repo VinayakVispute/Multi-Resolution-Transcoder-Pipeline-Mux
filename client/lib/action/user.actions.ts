@@ -1,5 +1,6 @@
 "use server";
 import prisma from "@/lib/prisma";
+import { createEdgePrismaClient } from "@/lib/prisma";
 
 export const isUserEligibleForUpload = async (
   userId: string,
@@ -7,6 +8,7 @@ export const isUserEligibleForUpload = async (
 ): Promise<boolean> => {
   // Maximum allowed size per video in MB
   const MAX_VIDEO_SIZE_MB = 50;
+  const edgePrisma = createEdgePrismaClient();
 
   // Check if video exceeds allowed size
   if (videoSizeInMB > MAX_VIDEO_SIZE_MB) {
@@ -15,7 +17,7 @@ export const isUserEligibleForUpload = async (
   }
 
   // Fetch user details from the database
-  const user = await prisma.user.findUnique({
+  const user = await edgePrisma.user.findUnique({
     where: { id: userId },
     select: {
       videosUploaded: true,

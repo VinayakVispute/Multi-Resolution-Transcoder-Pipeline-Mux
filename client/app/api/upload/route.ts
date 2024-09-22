@@ -3,6 +3,7 @@ import {
   BlobServiceClient,
   BlockBlobUploadStreamOptions,
 } from "@azure/storage-blob";
+import { Readable } from "stream";
 import { createdUploadedVideoInDb } from "@/lib/action/video.action";
 import { v4 as uuidv4 } from "uuid";
 import { updateProgress } from "@/utils/progress";
@@ -80,6 +81,10 @@ export async function POST(req: Request) {
     const containerClient = blobServiceClient.getContainerClient(containerName);
     const blobClient = containerClient.getBlockBlobClient(uniqueVideoName);
 
+    // const videoBuffer = await videoFile.arrayBuffer();
+    // const buffer = Buffer.from(videoBuffer);
+    // const fileStream = Readable.from(buffer);
+
     const arrayBuffer = await videoFile.arrayBuffer();
 
     const options: BlockBlobUploadStreamOptions = {
@@ -99,9 +104,17 @@ export async function POST(req: Request) {
       },
     };
 
-    console.log("Uploading the video to Azure Blob Storage...");
-    await blobClient.upload(arrayBuffer, arrayBuffer.byteLength, options);
+    // const bufferSize = 4 * 1024 * 1024; // 4MB buffer size
+    // const maxConcurrency = 20; // 20 concurrent uploads
 
+    console.log("Uploading the video to Azure Blob Storage...");
+    // const response = await blobClient.uploadStream(
+    //   fileStream,
+    //   bufferSize,
+    //   maxConcurrency,
+    //   options
+    // );
+    await blobClient.upload(arrayBuffer, arrayBuffer.byteLength, options);
     console.log("File uploaded successfully:", blobClient.url);
 
     // Retrieve and log the metadata of the uploaded blob
