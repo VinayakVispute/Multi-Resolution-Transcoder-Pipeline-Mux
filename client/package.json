@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate"
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "@azure/storage-blob": "^12.24.0",
@@ -29,9 +30,12 @@
     "axios": "^1.7.6",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.33.0",
     "framer-motion": "^11.5.4",
     "lucide-react": "^0.436.0",
     "next": "14.2.7",
+    "pg": "^8.13.0",
     "prisma": "^5.19.1",
     "pusher": "^5.2.0",
     "pusher-js": "^8.4.0-rc2",
@@ -50,9 +54,11 @@
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/pg": "^8.11.10",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/uuid": "^10.0.0",
+    "drizzle-kit": "^0.24.2",
     "eslint": "^8",
     "eslint-config-next": "14.2.7",
     "postcss": "^8",
