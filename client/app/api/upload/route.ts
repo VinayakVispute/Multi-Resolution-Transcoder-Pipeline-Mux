@@ -1,15 +1,16 @@
+export const runtime = "edge";
+
 import { NextResponse } from "next/server";
 import {
   BlobServiceClient,
   BlockBlobUploadStreamOptions,
 } from "@azure/storage-blob";
+import { Readable } from "stream";
 import { createdUploadedVideoInDb } from "@/lib/action/video.action";
 import { v4 as uuidv4 } from "uuid";
 import { updateProgress } from "@/utils/progress";
 import { currentUser } from "@clerk/nextjs/server";
 import { isUserEligibleForUpload } from "@/lib/action/user.actions";
-
-export const runtime = "edge";
 
 export async function POST(req: Request) {
   const formData = await req.formData();
@@ -80,7 +81,9 @@ export async function POST(req: Request) {
     const containerClient = blobServiceClient.getContainerClient(containerName);
     const blobClient = containerClient.getBlockBlobClient(uniqueVideoName);
 
-    const arrayBuffer = await videoFile.arrayBuffer();
+    const videoBuffer = await videoFile.arrayBuffer();
+    const buffer = Buffer.from(videoBuffer);
+    const fileStream = Readable.from(buffer);
 
     const options: BlockBlobUploadStreamOptions = {
       blobHTTPHeaders: {
@@ -88,7 +91,7 @@ export async function POST(req: Request) {
       },
       onProgress: (progress) => {
         const progressPercentage = Math.floor(
-          (progress.loadedBytes / videoFile.size) * 100
+          (progress.loadedBytes / buffer.length) * 100
         );
         console.log(`Progress: ${progressPercentage}%`);
         updateProgress(videoId, progressPercentage);
@@ -99,8 +102,16 @@ export async function POST(req: Request) {
       },
     };
 
+    const bufferSize = 4 * 1024 * 1024; // 4MB buffer size
+    const maxConcurrency = 20; // 20 concurrent uploads
+
     console.log("Uploading the video to Azure Blob Storage...");
-    await blobClient.upload(arrayBuffer, arrayBuffer.byteLength, options);
+    const response = await blobClient.uploadStream(
+      fileStream,
+      bufferSize,
+      maxConcurrency,
+      options
+    );
 
     console.log("File uploaded successfully:", blobClient.url);
 
