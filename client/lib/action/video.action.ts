@@ -1,5 +1,5 @@
 "use server";
-import prisma, { createEdgePrismaClient } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { currentUser } from "@clerk/nextjs/server";
 import { createUploadVideoInDbParams, UploadedVideo } from "@/interface";
 import { EventStatus, Status } from "@prisma/client";
@@ -12,7 +12,6 @@ export const createdUploadedVideoInDb = async (
 ) => {
   try {
     const user = await currentUser();
-    const edgePrisma = createEdgePrismaClient();
 
     if (!user || !user.privateMetadata || !user.privateMetadata.userId) {
       console.error("User authentication failed");
@@ -25,9 +24,9 @@ export const createdUploadedVideoInDb = async (
     const { id, title, videoUrl, resolution } = params;
 
     // Use a transaction to combine both operations atomically
-    const result = await edgePrisma.$transaction(async (prisma) => {
+    const result = await prisma.$transaction(async (prisma) => {
       // Create the new video
-      const newVideo = await edgePrisma.video.create({
+      const newVideo = await prisma.video.create({
         data: {
           title: title,
           videoUrl: videoUrl,
@@ -36,7 +35,7 @@ export const createdUploadedVideoInDb = async (
       });
 
       // Create the uploaded video linked to the user and new video
-      const newUploadedVideo = await edgePrisma.uploadedVideo.create({
+      const newUploadedVideo = await prisma.uploadedVideo.create({
         data: {
           id: id,
           userId: userId,
@@ -46,7 +45,7 @@ export const createdUploadedVideoInDb = async (
       });
 
       // Increment videos uploaded by the user
-      const incrementResponse = await edgePrisma.user.update({
+      const incrementResponse = await prisma.user.update({
         where: { id: userId },
         data: {
           videosUploaded: { increment: 1 },
