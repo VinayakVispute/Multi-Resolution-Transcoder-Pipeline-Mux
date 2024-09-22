@@ -12,6 +12,11 @@ const nextConfig = {
       },
     ],
   },
+  api: {
+    bodyParser: {
+      sizeLimit: "100mb", // Increase this according to your needs
+    },
+  },
   reactStrictMode: false,
 };
 
