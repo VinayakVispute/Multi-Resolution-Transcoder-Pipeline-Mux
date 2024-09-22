@@ -43,7 +43,7 @@ This project automates the process of transcoding videos into multiple resolutio
 - **Purpose**: Provides a platform for running the containerized video transcoding service.
 - **Role**: The pipeline spins up containers on demand to handle video transcoding, ensuring that resources are used efficiently.
 
-### 4. **Azure Container Registry ACR**
+### 4. **Azure Container Registry**
 
 - **Purpose**: Stores container images.
 - **Role**: The pipeline pulls the Docker image from the registry to spin up container instances for video processing.
