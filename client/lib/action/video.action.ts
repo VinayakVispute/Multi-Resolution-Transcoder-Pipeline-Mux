@@ -1,74 +1,11 @@
 "use server";
-import prisma, { createEdgePrismaClient } from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import { currentUser } from "@clerk/nextjs/server";
 import { createUploadVideoInDbParams, UploadedVideo } from "@/interface";
 import { EventStatus, Status } from "@prisma/client";
 import { createNotification } from "./notification.action";
 
 // TODO: Implement revalidation and error handling
-
-export const createdUploadedVideoInDb = async (
-  params: createUploadVideoInDbParams
-) => {
-  try {
-    const user = await currentUser();
-    const edgePrisma = createEdgePrismaClient();
-
-    if (!user || !user.privateMetadata || !user.privateMetadata.userId) {
-      console.error("User authentication failed");
-      return {
-        success: false,
-        message: "User authentication failed",
-      };
-    }
-    const userId = user.privateMetadata.userId as string;
-    const { id, title, videoUrl, resolution } = params;
-
-    // Use a transaction to combine both operations atomically
-    const result = await edgePrisma.$transaction(async (prisma) => {
-      // Create the new video
-      const newVideo = await edgePrisma.video.create({
-        data: {
-          title: title,
-          videoUrl: videoUrl,
-          resolution: resolution,
-        },
-      });
-
-      // Create the uploaded video linked to the user and new video
-      const newUploadedVideo = await edgePrisma.uploadedVideo.create({
-        data: {
-          id: id,
-          userId: userId,
-          status: "PENDING",
-          videoId: newVideo.id, // Link the newly created Video
-        },
-      });
-
-      // Increment videos uploaded by the user
-      const incrementResponse = await edgePrisma.user.update({
-        where: { id: userId },
-        data: {
-          videosUploaded: { increment: 1 },
-        },
-      });
-      console.log("incrementResponse", incrementResponse);
-      return newUploadedVideo;
-    });
-
-    return {
-      success: true,
-      data: result,
-      message: "Video uploaded and user video count updated successfully",
-    };
-  } catch (error) {
-    console.error("An error occurred:", error);
-    return {
-      success: false,
-      message: "Failed to upload video and update user",
-    };
-  }
-};
 
 export const fetchUploadedVideos = async (): Promise<{
   success: boolean;

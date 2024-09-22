@@ -3,13 +3,19 @@ import {
   BlobServiceClient,
   BlockBlobUploadStreamOptions,
 } from "@azure/storage-blob";
-import { createdUploadedVideoInDb } from "@/lib/action/video.action";
 import { v4 as uuidv4 } from "uuid";
 import { updateProgress } from "@/utils/progress";
 import { currentUser } from "@clerk/nextjs/server";
-import { isUserEligibleForUpload } from "@/lib/action/user.actions";
+import { PrismaClient } from "@prisma/client";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import { Pool } from "@neondatabase/serverless";
 
 export const runtime = "edge";
+
+// Initialize Prisma with NeonDB
+const neon = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaNeon(neon);
+const prisma = new PrismaClient({ adapter });
 
 export async function POST(req: Request) {
   const formData = await req.formData();
@@ -19,10 +25,9 @@ export async function POST(req: Request) {
   const videoName = formData.get("videoName") as string;
   const resolution = formData.get("resolution");
   const videoId = formData.get("videoId") as string;
+
   try {
     console.log("Starting to process the request...");
-
-    console.log(`Received video: ${videoName}, resolution: ${resolution}`);
 
     const uniqueId = uuidv4(); // Generate a UUID
     console.log(`Generated unique video ID: ${uniqueId}`);
@@ -80,10 +85,6 @@ export async function POST(req: Request) {
     const containerClient = blobServiceClient.getContainerClient(containerName);
     const blobClient = containerClient.getBlockBlobClient(uniqueVideoName);
 
-    // const videoBuffer = await videoFile.arrayBuffer();
-    // const buffer = Buffer.from(videoBuffer);
-    // const fileStream = Readable.from(buffer);
-
     const arrayBuffer = await videoFile.arrayBuffer();
 
     const options: BlockBlobUploadStreamOptions = {
@@ -103,22 +104,9 @@ export async function POST(req: Request) {
       },
     };
 
-    // const bufferSize = 4 * 1024 * 1024; // 4MB buffer size
-    // const maxConcurrency = 20; // 20 concurrent uploads
-
     console.log("Uploading the video to Azure Blob Storage...");
-    // const response = await blobClient.uploadStream(
-    //   fileStream,
-    //   bufferSize,
-    //   maxConcurrency,
-    //   options
-    // );
     await blobClient.upload(arrayBuffer, arrayBuffer.byteLength, options);
     console.log("File uploaded successfully:", blobClient.url);
-
-    // Retrieve and log the metadata of the uploaded blob
-    const properties = await blobClient.getProperties();
-    console.log("Blob properties:", properties);
 
     updateProgress(videoId, 100);
 
@@ -143,4 +131,105 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+}
+
+// Inline the `createdUploadedVideoInDb` function
+async function createdUploadedVideoInDb(params: {
+  id: string;
+  title: string;
+  videoUrl: string;
+  resolution: string;
+}) {
+  try {
+    const user = await currentUser();
+
+    if (!user || !user.privateMetadata || !user.privateMetadata.userId) {
+      console.error("User authentication failed");
+      return {
+        success: false,
+        message: "User authentication failed",
+      };
+    }
+
+    const userId = user.privateMetadata.userId as string;
+    const { id, title, videoUrl, resolution } = params;
+
+    // Use a transaction to combine both operations atomically
+    const result = await prisma.$transaction(async (prisma) => {
+      // Create the new video
+      const newVideo = await prisma.video.create({
+        data: {
+          title: title,
+          videoUrl: videoUrl,
+          resolution: resolution,
+        },
+      });
+
+      // Create the uploaded video linked to the user and new video
+      const newUploadedVideo = await prisma.uploadedVideo.create({
+        data: {
+          id: id,
+          userId: userId,
+          status: "PENDING",
+          videoId: newVideo.id, // Link the newly created Video
+        },
+      });
+
+      // Increment videos uploaded by the user
+      const incrementResponse = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          videosUploaded: { increment: 1 },
+        },
+      });
+      console.log("incrementResponse", incrementResponse);
+      return newUploadedVideo;
+    });
+
+    return {
+      success: true,
+      data: result,
+      message: "Video uploaded and user video count updated successfully",
+    };
+  } catch (error) {
+    console.error("An error occurred:", error);
+    return {
+      success: false,
+      message: "Failed to upload video and update user",
+    };
+  }
+}
+
+// Inline the `isUserEligibleForUpload` function
+async function isUserEligibleForUpload(
+  userId: string,
+  videoSizeInMB: number
+): Promise<boolean> {
+  // Maximum allowed size per video in MB
+  const MAX_VIDEO_SIZE_MB = 50;
+
+  // Check if video exceeds allowed size
+  if (videoSizeInMB > MAX_VIDEO_SIZE_MB) {
+    console.error("Video size exceeds the allowed limit");
+    return false;
+  }
+
+  // Fetch user details from the database
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      videosUploaded: true,
+      maxVideosAllowed: true,
+    },
+  });
+
+  // If user not found, or they have already uploaded the max allowed videos
+  if (!user || user.videosUploaded >= user.maxVideosAllowed) {
+    console.error("User has reached the maximum allowed video uploads");
+    return false;
+  }
+
+  // If user is eligible to upload, return true
+  console.log("User is eligible to upload the video");
+  return true;
 }
