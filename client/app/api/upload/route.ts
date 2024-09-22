@@ -3,6 +3,7 @@ import {
   BlobServiceClient,
   BlockBlobUploadStreamOptions,
 } from "@azure/storage-blob";
+import { Readable } from "stream";
 import { createdUploadedVideoInDb } from "@/lib/action/video.action";
 import { v4 as uuidv4 } from "uuid";
 import { updateProgress } from "@/utils/progress";
