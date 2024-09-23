@@ -7,7 +7,6 @@ import { isUserEligibleForUpload } from "@/lib/action/user.actions";
 import { uploadVideoToAzureBlob } from "@/lib/azureBlobUpload";
 
 export const runtime = "nodejs";
-export const sizeLimit = "100mb";
 
 export async function POST(req: Request) {
   const formData = await req.formData();
