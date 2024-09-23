@@ -1,14 +1,10 @@
 import { NextResponse } from "next/server";
-import {
-  BlobServiceClient,
-  BlockBlobUploadStreamOptions,
-} from "@azure/storage-blob";
-import { Readable } from "stream";
 import { createdUploadedVideoInDb } from "@/lib/action/video.action";
 import { v4 as uuidv4 } from "uuid";
 import { updateProgress } from "@/utils/progress";
 import { currentUser } from "@clerk/nextjs/server";
 import { isUserEligibleForUpload } from "@/lib/action/user.actions";
+import { uploadVideoToAzureBlob } from "@/lib/azureBlobUpload";
 
 export async function POST(req: Request) {
   const formData = await req.formData();
@@ -62,74 +58,29 @@ export async function POST(req: Request) {
     const baseName = videoName.substring(0, videoName.lastIndexOf("."));
     const uniqueVideoName = `${baseName}_${uniqueId}.${fileExtension}`; // Create a unique video name with extension
     console.log(`Unique video name: ${uniqueVideoName}`);
-
-    const accountName = process.env.BLOB_RESOURCE_NAME;
-    const sasToken = process.env.SAS_TOKEN_AZURE;
-    const containerName = process.env.BLOB_CONTAINER_NAME;
-
-    if (!accountName || !sasToken || !containerName) {
-      throw new Error("Missing Azure Blob Storage configuration");
-    }
-
-    console.log("Azure Blob Storage config found, starting upload...");
-
-    const blobServiceClient = new BlobServiceClient(
-      `https://${accountName}.blob.core.windows.net/?${sasToken}`
+    // Upload video to Azure Blob using the helper function
+    const videoUrl = await uploadVideoToAzureBlob(
+      videoFile,
+      uniqueVideoName,
+      videoId,
+      resolution as string
     );
-    const containerClient = blobServiceClient.getContainerClient(containerName);
-    const blobClient = containerClient.getBlockBlobClient(uniqueVideoName);
-
-    const videoBuffer = await videoFile.arrayBuffer();
-    const buffer = Buffer.from(videoBuffer);
-    const fileStream = Readable.from(buffer);
-
-    const options: BlockBlobUploadStreamOptions = {
-      blobHTTPHeaders: {
-        blobContentType: videoFile.type,
-      },
-      onProgress: (progress) => {
-        const progressPercentage = Math.floor(
-          (progress.loadedBytes / buffer.length) * 100
-        );
-        console.log(`Progress: ${progressPercentage}%`);
-        updateProgress(videoId, progressPercentage);
-      },
-      metadata: {
-        uniqueId,
-        currentResolution: resolution as string,
-      },
-    };
-
-    const bufferSize = 4 * 1024 * 1024; // 4MB buffer size
-    const maxConcurrency = 20; // 20 concurrent uploads
-
-    console.log("Uploading the video to Azure Blob Storage...");
-    const response = await blobClient.uploadStream(
-      fileStream,
-      bufferSize,
-      maxConcurrency,
-      options
-    );
-
-    console.log("File uploaded successfully:", blobClient.url);
+    console.log("File uploaded successfully:", videoUrl);
 
     // Retrieve and log the metadata of the uploaded blob
-    const properties = await blobClient.getProperties();
-    console.log("Blob properties:", properties);
-
     updateProgress(videoId, 100);
 
     // Save video data to the database
     await createdUploadedVideoInDb({
       id: uniqueId,
       title: videoName,
-      videoUrl: blobClient.url,
+      videoUrl: videoUrl,
       resolution: resolution as string,
     });
     console.log("Video data saved to the database");
 
     return NextResponse.json(
-      { message: "File uploaded successfully", videoUrl: blobClient.url },
+      { message: "File uploaded successfully", videoUrl: videoUrl },
       { status: 200 }
     );
   } catch (error: any) {
