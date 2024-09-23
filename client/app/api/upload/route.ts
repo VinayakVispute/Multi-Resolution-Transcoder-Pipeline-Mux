@@ -6,6 +6,14 @@ import { currentUser } from "@clerk/nextjs/server";
 import { isUserEligibleForUpload } from "@/lib/action/user.actions";
 import { uploadVideoToAzureBlob } from "@/lib/azureBlobUpload";
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: "100mb", // Adjust the size limit as needed
+    },
+  },
+};
+
 export async function POST(req: Request) {
   const formData = await req.formData();
   console.log("Form data parsed successfully");
