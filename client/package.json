@@ -23,6 +23,7 @@
     "@tsparticles/engine": "^3.5.0",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.5.0",
+    "@vercel/blob": "^0.24.0",
     "axios": "^1.7.6",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",

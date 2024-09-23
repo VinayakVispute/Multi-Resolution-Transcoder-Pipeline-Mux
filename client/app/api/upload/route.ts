@@ -4,7 +4,8 @@ import { v4 as uuidv4 } from "uuid";
 import { updateProgress } from "@/utils/progress";
 import { currentUser } from "@clerk/nextjs/server";
 import { isUserEligibleForUpload } from "@/lib/action/user.actions";
-import { uploadVideoToAzureBlob } from "@/lib/azureBlobUpload";
+import { uploadVideoToAzureBlobFromURL } from "@/lib/azureBlobUpload";
+import { del } from "@vercel/blob";
 
 export const runtime = "nodejs";
 
@@ -12,7 +13,7 @@ export async function POST(req: Request) {
   const formData = await req.formData();
   console.log("Form data parsed successfully");
 
-  const videoFile = formData.get("video") as File;
+  const videoUrl = formData.get("videoUrl") as string;
   const videoName = formData.get("videoName") as string;
   const resolution = formData.get("resolution");
   const videoId = formData.get("videoId") as string;
@@ -34,8 +35,8 @@ export async function POST(req: Request) {
     const userId = user.privateMetadata.userId as string;
     console.log(`User ID: ${userId}`);
 
-    if (!videoFile || !videoName || !resolution) {
-      const missingField = !videoFile
+    if (!videoUrl || !videoName || !resolution) {
+      const missingField = !videoUrl
         ? "video file"
         : !videoName
         ? "video name"
@@ -43,10 +44,10 @@ export async function POST(req: Request) {
       throw new Error(`Missing required field: ${missingField}`);
     }
 
-    const videoSizeInMB = videoFile.size / (1024 * 1024); // Convert to MB
-    console.log(`Video size in MB: ${videoSizeInMB}`);
+    // const videoSizeInMB = videoFile.size / (1024 * 1024); // Convert to MB
+    // console.log(`Video size in MB: ${videoSizeInMB}`);
 
-    const userEligible = await isUserEligibleForUpload(userId, videoSizeInMB);
+    const userEligible = await isUserEligibleForUpload(userId, 0);
     console.log(`Is user eligible for upload? ${userEligible}`);
 
     if (!userEligible) {
@@ -61,26 +62,31 @@ export async function POST(req: Request) {
     const uniqueVideoName = `${baseName}_${uniqueId}.${fileExtension}`; // Create a unique video name with extension
     console.log(`Unique video name: ${uniqueVideoName}`);
     // Upload video to Azure Blob using the helper function
-    const videoUrl = await uploadVideoToAzureBlob(
-      videoFile,
+    const azureVideoUrl = await uploadVideoToAzureBlobFromURL(
+      videoUrl,
       uniqueVideoName,
       videoId,
       resolution as string
     );
-    console.log("File uploaded successfully:", videoUrl);
+    console.log("File uploaded successfully:", azureVideoUrl);
 
     // Retrieve and log the metadata of the uploaded blob
     updateProgress(videoId, 100);
-
+    if (!azureVideoUrl.url) {
+      throw new Error("Azure upload failed");
+    }
+    console.log("Azure video URL:", azureVideoUrl.url);
     // Save video data to the database
     await createdUploadedVideoInDb({
       id: uniqueId,
       title: videoName,
-      videoUrl: videoUrl,
+      videoUrl: azureVideoUrl.url,
       resolution: resolution as string,
     });
     console.log("Video data saved to the database");
-
+    del(videoUrl, {
+      token: process.env.NEXT_PUBLIC_BLOB_READ_WRITE_TOKEN || "",
+    });
     return NextResponse.json(
       { message: "File uploaded successfully", videoUrl: videoUrl },
       { status: 200 }

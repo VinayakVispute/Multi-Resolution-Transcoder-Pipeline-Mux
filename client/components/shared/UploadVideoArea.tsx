@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { CloudUploadIcon, X } from "lucide-react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { uploadToVercelStorage } from "@/lib/vercelBlob";
 
 const UploadVideoArea = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -112,7 +113,6 @@ const UploadVideoArea = () => {
   }
 
   const submitVideo = async () => {
-    const videoId = `${Date.now()}-${videoName}`;
     if (!videoFile || !videoName || !videoResolution) {
       toast.error("Please fill in all the fields");
       return;
@@ -121,12 +121,9 @@ const UploadVideoArea = () => {
       toast.error("Please upload a video with 720p, 1080p, or 4K resolution");
       return;
     }
-    const formData = new FormData();
-    formData.append("video", videoFile as File);
-    formData.append("videoName", videoName as string);
-    formData.append("resolution", videoResolution as string);
-    formData.append("videoId", videoId);
-    setVideoId(videoId);
+
+
+
 
     setLoading(true);
     const toastId = toast.custom(
@@ -176,6 +173,23 @@ const UploadVideoArea = () => {
       }
     );
     try {
+      // Upload video to Vercel Blob
+
+      const vercelUploadResponse = await uploadToVercelStorage(videoFile);
+      if (!vercelUploadResponse.success || !vercelUploadResponse.data?.url) {
+        throw new Error("Failed to upload to Vercel Blob");
+      }
+      const videoId = `${Date.now()}-${videoName}`;
+      setVideoId(videoId);
+      const formData = new FormData();
+      formData.append("videoUrl", vercelUploadResponse.data.url); // Use Vercel Blob URL
+      formData.append("videoName", videoName);
+      formData.append("resolution", videoResolution);
+      formData.append("videoId", videoId);
+
+
+
+
       const response = await axios.post("/api/upload", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
