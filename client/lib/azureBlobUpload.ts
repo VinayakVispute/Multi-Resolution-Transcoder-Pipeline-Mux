@@ -42,10 +42,7 @@ export async function uploadVideoToAzureDirectly(
         "Failed to fetch SAS token from API:",
         response.data.message
       );
-      return {
-        success: false,
-        error: response.data.message || "Failed to fetch SAS token",
-      };
+      throw new Error(response.data.message || "Failed to fetch SAS token");
     }
 
     const { uploadUrl } = response.data;
@@ -96,9 +93,20 @@ export async function uploadVideoToAzureDirectly(
     };
   } catch (error: any) {
     console.error("Azure Blob direct upload failed:", error.message || error);
+
+    let errorMessage = "Azure Blob direct upload failed.";
+    if (error.message && error.message.includes("Failed to fetch SAS token")) {
+      errorMessage = "Failed to fetch SAS token. Please try again.";
+    } else if (error.message && error.message.includes("upload")) {
+      errorMessage =
+        "Failed to upload video. Please check your connection and try again.";
+    } else if (error.message && error.message.includes("database")) {
+      errorMessage = "Failed to create video record in the database.";
+    }
+
     return {
       success: false,
-      error: "Azure Blob direct upload failed.",
+      error: errorMessage,
     };
   }
 }

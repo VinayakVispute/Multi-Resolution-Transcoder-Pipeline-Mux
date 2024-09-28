@@ -80,11 +80,11 @@ const UploadVideoArea = () => {
 
   const submitVideo = async () => {
     if (!videoFile || !videoName || !videoResolution) {
-      toast.error("Please fill in all the fields");
+      toast.error("Please fill in all the fields.");
       return;
     }
     if (!isVideoResolutionDecodable(videoResolution)) {
-      toast.error("Please upload a video with 720p, 1080p, or 4K resolution");
+      toast.error("Please upload a video with 720p, 1080p, or 4K resolution.");
       return;
     }
 
@@ -108,9 +108,9 @@ const UploadVideoArea = () => {
       } else {
         throw new Error(result.error || "Upload failed");
       }
-    } catch (error) {
-      console.error(error);
-      toast.error("There was an error uploading your video", { id: toastId });
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      toast.error(error.message || "An unexpected error occurred during upload.", { id: toastId });
     } finally {
       setLoading(false);
       setVideoFile(null);
@@ -122,6 +122,7 @@ const UploadVideoArea = () => {
       }, 5000);
     }
   };
+
 
   return (
     <Card className="bg-white border border-[#0ca678]">
