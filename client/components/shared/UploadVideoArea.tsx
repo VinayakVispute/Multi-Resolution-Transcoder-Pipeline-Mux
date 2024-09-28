@@ -205,29 +205,7 @@ const UploadVideoArea = () => {
             Clear
           </Button>
         </div>
-        {loading && (
-          <div className="mt-4">
-            <div>
-              <div className="flex justify-between mb-1">
-                <span className="text-base font-medium text-[#0ca678]">
-                  Upload
-                </span>
-                <span className="text-sm font-medium text-[#0ca678]">
-                  {percentage}%
-                </span>
-              </div>
-              <div className="w-full bg-[#e6fcf5] rounded-full h-2.5">
-                <div
-                  className="bg-[#0ca678] h-2.5 rounded-full"
-                  style={{
-                    width: `${percentage}%`,
-                    transition: "width 0.5s ease-in-out",
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
+
       </CardContent>
     </Card>
   );

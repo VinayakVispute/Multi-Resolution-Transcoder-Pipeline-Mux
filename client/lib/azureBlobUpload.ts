@@ -60,6 +60,7 @@ export async function uploadVideoToAzureDirectly(
         resolution: videoResolution,
       },
       onProgress: (ev: any) => {
+        console.log("Upload progress:", ev, videoFile.size);
         if (ev.loadedBytes && videoFile.size) {
           const progress = ev.loadedBytes / videoFile.size;
           console.log(`Upload progress: ${(progress * 100).toFixed(2)}%`);
@@ -71,7 +72,7 @@ export async function uploadVideoToAzureDirectly(
     };
 
     console.log("Starting file upload...");
-    await blockBlobClient.uploadBrowserData(videoFile, uploadOptions);
+    await blockBlobClient.uploadData(videoFile, uploadOptions);
     console.log("File upload completed");
 
     // Ensure the progress reaches 100%
