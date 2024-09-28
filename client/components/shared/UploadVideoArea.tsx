@@ -7,9 +7,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CloudUploadIcon, X } from "lucide-react";
-import axios from "axios";
 import toast from "react-hot-toast";
-import { uploadToVercelStorage } from "@/lib/vercelBlob";
+import { uploadVideoToAzureDirectly } from "@/lib/azureBlobUpload";
 
 const UploadVideoArea = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -18,7 +17,6 @@ const UploadVideoArea = () => {
   const [videoName, setVideoName] = useState<string | null>(null);
   const [percentage, setPercentage] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [videoId, setVideoId] = useState<string | null>(null);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -66,33 +64,6 @@ const UploadVideoArea = () => {
     }
   }, [videoPreview]);
 
-  useEffect(() => {
-    if (videoId) {
-      const eventSource = new EventSource(`/api/progress?videoId=${videoId}`);
-      console.log("Event source created");
-      eventSource.onmessage = (event) => {
-        const { progress } = JSON.parse(event.data);
-        setPercentage(progress);
-        if (progress === 100) {
-          console.log("Upload complete, closing EventSource");
-          eventSource.close();
-        } else if (progress === -1) {
-          console.error("Upload failed, closing EventSource");
-          eventSource.close();
-        }
-      };
-
-      eventSource.onerror = (error) => {
-        console.error("EventSource error:", error);
-        eventSource.close();
-      };
-
-      return () => {
-        eventSource.close();
-      };
-    }
-  }, [videoId]);
-
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
@@ -104,12 +75,7 @@ const UploadVideoArea = () => {
   });
 
   const isVideoResolutionDecodable = (resolution: string) => {
-    if (resolution === "720p" || resolution === "1080p" || resolution === "4K") {
-      console.log(true)
-      return true;
-    }
-    console.log(false)
-    return false;
+    return ["720p", "1080p", "4K"].includes(resolution);
   }
 
   const submitVideo = async () => {
@@ -122,178 +88,29 @@ const UploadVideoArea = () => {
       return;
     }
 
-
-
-
     setLoading(true);
-    const toastId = toast.custom(
-      (t) => (
-        <div
-          className={`${t.visible ? "animate-enter" : "animate-leave"
-            } max-w-md w-full bg-[#e6fcf5] shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-[#0ca678] ring-opacity-5`}
-        >
-          <div className="flex-1 w-0 p-4">
-            <div className="flex items-start">
-              <div className="flex-shrink-0 pt-0.5">
-                <svg
-                  className="h-10 w-10 text-[#0ca678] animate-spin"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8H4z"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3 flex-1">
-                <p className="text-sm font-medium text-[#0ca678]">Loading...</p>
-                <p className="mt-1 text-sm text-[#12b886]">
-                  Please wait while we process your request.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      ),
-      {
-        duration: 30000,
-      }
-    );
+    const toastId = toast.loading("Uploading video...");
+
     try {
-      // Upload video to Vercel Blob
-
-      const vercelUploadResponse = await uploadToVercelStorage(videoFile);
-      if (!vercelUploadResponse.success || !vercelUploadResponse.data?.url) {
-        throw new Error("Failed to upload to Vercel Blob");
-      }
       const videoId = `${Date.now()}-${videoName}`;
-      setVideoId(videoId);
-      const formData = new FormData();
-      formData.append("videoUrl", vercelUploadResponse.data.url); // Use Vercel Blob URL
-      formData.append("videoName", videoName);
-      formData.append("resolution", videoResolution);
-      formData.append("videoId", videoId);
-
-
-
-
-      const response = await axios.post("/api/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      console.log(response.data);
-      toast.custom(
-        (t) => (
-          <div
-            className={`${t.visible ? "animate-enter" : "animate-leave"
-              } max-w-md w-full bg-[#e6fcf5] shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-[#0ca678] ring-opacity-5`}
-          >
-            <div className="flex-1 w-0 p-4">
-              <div className="flex items-start">
-                <div className="flex-shrink-0 pt-0.5">
-                  <svg
-                    className="h-10 w-10 text-[#0ca678]"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2l4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <div className="ml-3 flex-1">
-                  <p className="text-sm font-medium text-[#0ca678]">Success!</p>
-                  <p className="mt-1 text-sm text-[#12b886]">
-                    Video Uploaded Successfully
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="flex border-l border-[#0ca678]">
-              <button
-                onClick={() => toast.dismiss(t.id)}
-                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-[#0ca678] hover:text-[#12b886] focus:outline-none focus:ring-2 focus:ring-[#0ca678]"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        ),
-        {
-          id: toastId,
-          duration: 3000,
+      const result = await uploadVideoToAzureDirectly(
+        videoName,
+        videoFile,
+        videoResolution,
+        videoId,
+        (progress) => {
+          setPercentage(Math.round(progress * 100));
         }
       );
+
+      if (result.success) {
+        toast.success("Video uploaded successfully", { id: toastId });
+      } else {
+        throw new Error(result.error || "Upload failed");
+      }
     } catch (error) {
       console.error(error);
-      toast.custom(
-        (t) => (
-          <div
-            className={`${t.visible ? "animate-enter" : "animate-leave"
-              } max-w-md w-full bg-[#fff5f5] shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-[#ff6b6b] ring-opacity-5`}
-          >
-            <div className="flex-1 w-0 p-4">
-              <div className="flex items-start">
-                <div className="flex-shrink-0 pt-0.5">
-                  <svg
-                    className="h-10 w-10 text-[#ff6b6b]"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </div>
-                <div className="ml-3 flex-1">
-                  <p className="text-sm font-medium text-[#ff6b6b]">Error!</p>
-                  <p className="mt-1 text-sm text-[#fa5252]">
-                    There was an error uploading your video.
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="flex border-l border-[#ff6b6b]">
-              <button
-                onClick={() => toast.dismiss(t.id)}
-                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-[#ff6b6b] hover:text-[#fa5252] focus:outline-none focus:ring-2 focus:ring-[#ff6b6b]"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        ),
-        {
-          id: toastId,
-          duration: 3000,
-        }
-      );
+      toast.error("There was an error uploading your video", { id: toastId });
     } finally {
       setLoading(false);
       setVideoFile(null);
@@ -302,7 +119,7 @@ const UploadVideoArea = () => {
       setVideoName(null);
       setTimeout(() => {
         setPercentage(0);
-      }, 5000); // Reset the progress bar after 5 seconds
+      }, 5000);
     }
   };
 

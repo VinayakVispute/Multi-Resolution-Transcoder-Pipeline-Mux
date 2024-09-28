@@ -1,5 +1,10 @@
-import { BlobServiceClient, BlockBlobClient } from "@azure/storage-blob";
-import { updateProgress } from "@/utils/progress";
+import {
+  BlockBlobClient,
+  BlockBlobParallelUploadOptions,
+} from "@azure/storage-blob";
+import { v4 as uuidv4 } from "uuid";
+import axios from "axios";
+import { createdUploadedVideoInDb } from "./action/video.action";
 
 interface UploadResult {
   success: boolean;
@@ -7,56 +12,93 @@ interface UploadResult {
   error?: string;
 }
 
-export async function uploadVideoToAzureBlobFromURL(
-  videoUrl: string, // Vercel-hosted video URL
-  uniqueVideoName: string, // Name to store the video in Azure Blob Storage
-  videoId: string, // Unique ID for tracking the upload progress
-  resolution: string // Metadata for resolution
+export async function uploadVideoToAzureDirectly(
+  videoFileName: string,
+  videoFile: File,
+  videoResolution: string,
+  videoId: string,
+  onProgress: (progress: number) => void
 ): Promise<UploadResult> {
   try {
-    // Ensure Azure Blob Storage configuration values are set
-    const accountName = process.env.BLOB_RESOURCE_NAME;
-    const sasToken = process.env.SAS_TOKEN_AZURE;
-    const containerName = process.env.BLOB_CONTAINER_NAME;
+    console.log("Starting upload process...");
 
-    if (!accountName || !sasToken || !containerName) {
-      throw new Error("Missing Azure Blob Storage configuration.");
+    const uniqueId = uuidv4();
+    console.log(`Generated unique ID: ${uniqueId}`);
+
+    const fileExtension = videoFileName.split(".").pop() || "";
+    const baseName =
+      videoFileName.substring(0, videoFileName.lastIndexOf(".")) ||
+      videoFileName;
+    const uniqueVideoName = `${baseName}_${uniqueId}.${fileExtension}`;
+    console.log(`Generated unique video name: ${uniqueVideoName}`);
+
+    console.log("Requesting SAS token and upload URL from API...");
+    const response = await axios.post("/api/authorize-blob", {
+      fileName: uniqueVideoName,
+    });
+
+    if (!response.data.success) {
+      console.error(
+        "Failed to fetch SAS token from API:",
+        response.data.message
+      );
+      return {
+        success: false,
+        error: response.data.message || "Failed to fetch SAS token",
+      };
     }
 
-    console.log("Azure Blob Storage config found, starting sync upload...");
+    const { uploadUrl } = response.data;
+    console.log("SAS token and upload URL fetched successfully");
 
-    // Initialize Blob Service Client with SAS token
-    const blobServiceClient = new BlobServiceClient(
-      `https://${accountName}.blob.core.windows.net/?${sasToken}`
-    );
-    const containerClient = blobServiceClient.getContainerClient(containerName);
-    const blobClient: BlockBlobClient =
-      containerClient.getBlockBlobClient(uniqueVideoName);
+    const blockBlobClient = new BlockBlobClient(uploadUrl);
+    console.log("Created BlockBlobClient");
 
-    // Azure Blob Storage upload options
-    const options = {
-      metadata: {
-        uniqueId: videoId,
-        currentResolution: resolution,
+    const uploadOptions: BlockBlobParallelUploadOptions = {
+      blobHTTPHeaders: {
+        blobContentType: videoFile.type,
       },
+      metadata: {
+        videoId: videoId,
+        resolution: videoResolution,
+      },
+      onProgress: (ev: any) => {
+        if (ev.loadedBytes && videoFile.size) {
+          const progress = ev.loadedBytes / videoFile.size;
+          console.log(`Upload progress: ${(progress * 100).toFixed(2)}%`);
+          onProgress(progress);
+        }
+      },
+      blockSize: 4 * 1024 * 1024, // 4MB block size
+      concurrency: 10, // Number of parallel uploads
     };
 
-    // Use syncUploadFromURL to directly upload the video from the source URL
-    console.log("Starting sync upload to Azure from URL...");
-    const response = await blobClient.syncUploadFromURL(videoUrl, options);
+    console.log("Starting file upload...");
+    await blockBlobClient.uploadBrowserData(videoFile, uploadOptions);
+    console.log("File upload completed");
 
-    console.log("File uploaded successfully:", blobClient.url);
+    // Ensure the progress reaches 100%
+    onProgress(1);
+    console.log("Progress set to 100%");
+
+    console.log("Creating video record in database...");
+    await createdUploadedVideoInDb({
+      id: uniqueId,
+      title: videoFileName,
+      videoUrl: blockBlobClient.url,
+      resolution: videoResolution as string,
+    });
+    console.log("Video record created in database");
 
     return {
       success: true,
-      url: blobClient.url,
+      url: blockBlobClient.url,
     };
   } catch (error: any) {
-    console.error("Azure Blob upload failed:", error.message || error);
-
+    console.error("Azure Blob direct upload failed:", error.message || error);
     return {
       success: false,
-      error: "Azure Blob upload failed.",
+      error: "Azure Blob direct upload failed.",
     };
   }
 }
