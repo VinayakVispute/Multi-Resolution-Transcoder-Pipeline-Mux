@@ -33,9 +33,6 @@ export const NotificationHistoryProvider = ({ children }: { children: ReactNode 
         return null;
     }
 
-    console.log("NotificationHistoryProvider rendered");
-    console.log("Current videoData:", videoData);
-    console.log("Current notifications:", notifications);
 
     const fetchData = async () => {
         console.log("Fetching video and notification data...");

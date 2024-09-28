@@ -79,7 +79,7 @@ const DashboardNavbar = () => {
                 <DropdownMenuContent align="end" >
                   <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {notifications && notifications.length > 0 && (
+                  {notifications && (
                     <NotificationDashboard notifications={notifications} />
                   )}
                 </DropdownMenuContent>

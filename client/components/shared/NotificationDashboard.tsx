@@ -51,24 +51,26 @@ function NotificationItem({ notification }: { notification: Notification }) {
     )
 }
 
-export default function Notifications({ notifications }: { notifications: Notification[] }) {
-    console.log("notifications", notifications, notifications.length)
+export default function Component({ notifications }: { notifications: Notification[] }) {
+    console.log("Vinayak", notifications, notifications.length)
     if (!notifications) {
         return <ErrorMessage message="Failed to fetch notifications" />
     }
 
-    if (notifications.length === 0) {
-        return <EmptyMessage message="No notifications" />
-    }
-
     return (
-        <ScrollArea className="h-[300px] w-[350px] rounded-md border p-4">
-            <div className="space-y-4">
-                {notifications.map((notification) => (
-                    <NotificationItem key={notification.id} notification={notification} />
-                ))}
-            </div>
-        </ScrollArea>
+        <div className="h-[300px] w-[350px] rounded-md border">
+            {notifications.length === 0 ? (
+                <EmptyMessage message="No notifications currently" />
+            ) : (
+                <ScrollArea className="h-full w-full p-4">
+                    <div className="space-y-4">
+                        {notifications.map((notification) => (
+                            <NotificationItem key={notification.id} notification={notification} />
+                        ))}
+                    </div>
+                </ScrollArea>
+            )}
+        </div>
     )
 }
 
@@ -83,7 +85,7 @@ function ErrorMessage({ message }: { message: string }) {
 
 function EmptyMessage({ message }: { message: string }) {
     return (
-        <div className="p-4 text-center text-gray-500">
+        <div className="h-full flex items-center justify-center text-gray-500">
             {message}
         </div>
     )

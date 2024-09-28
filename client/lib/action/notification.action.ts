@@ -77,9 +77,14 @@ export const fetchNotifications = async () => {
         },
       },
     },
-    orderBy: {
-      createdAt: "desc",
-    },
+    orderBy: [
+      {
+        createdAt: "desc",
+      },
+      {
+        read: "asc", // Sort by read status in ascending order
+      },
+    ],
   });
 
   if (!notifications) {
