@@ -10,10 +10,10 @@ import { Features } from "@/components/shared/landing/Featuer";
 
 export default function Home() {
     return (
-        <div>
+        <div className="overflow-x-hidden">
             <Navbar />
             <Hero />
-            <main className="min-h-screen m-10">
+            <main className="min-h-screen px-4 sm:px-6 lg:px-8">
                 <Features />
                 <div className="my-10">
                     <CTA />
