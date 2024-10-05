@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { CloudUploadIcon, X } from "lucide-react";
 import toast from "react-hot-toast";
 import { uploadVideoToAzureDirectly } from "@/lib/azureBlobUpload";
+import { motion, AnimatePresence } from "framer-motion";
 
 const UploadVideoArea = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -123,75 +125,100 @@ const UploadVideoArea = () => {
     }
   };
 
-
   return (
-    <Card className="bg-white border border-[#0ca678]">
-      <CardHeader className="bg-[#0ca678]">
+    <Card className="overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-orange-400 to-orange-600">
         <CardTitle className="text-white">Upload a Video</CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-4 bg-white p-6">
-        <div
+      <CardContent className="grid gap-6 p-6">
+
+        {/* @ts-ignore */}
+        <motion.div
           {...getRootProps()}
-          className={`relative flex items-center justify-center border-2 border-dashed rounded-lg p-8 transition-colors ${isDragActive ? "border-[#0ca678]" : "border-[#12b886]"
+          className={`relative flex items-center justify-center border-2 border-dashed rounded-lg p-8 transition-colors ${isDragActive ? "border-orange-400" : "border-orange-200"
             }`}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
         >
           <input {...getInputProps()} />
-          {!videoPreview ? (
-            <div className="text-center flex flex-col gap-y-4 justify-center items-center">
-              <CloudUploadIcon className="w-12 h-12 text-[#12b886]" />
-              <div className="text-[#0ca678] font-medium">Drag and drop your video here</div>
-              <div className="text-sm text-[#12b886]">
-                or click to select a file
-              </div>
-            </div>
-          ) : (
-            <div className="relative">
-              <video
-                src={videoPreview}
-                className="max-h-40 rounded-lg"
-                controls
-              />
-              <button
-                onClick={removeVideo}
-                className="absolute top-2 right-2 p-1 bg-[#0ca678] bg-opacity-50 rounded-full hover:bg-opacity-75 transition-colors"
+          <AnimatePresence mode="wait">
+            {!videoPreview ? (
+              <motion.div
+                key="dropzone"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-center flex flex-col gap-y-4 justify-center items-center"
               >
-                <X className="w-5 h-5 text-white" />
-              </button>
-            </div>
-          )}
-        </div>
+                <CloudUploadIcon className="w-12 h-12 text-orange-400" />
+                <div className="text-orange-600 font-medium">Drag and drop your video here</div>
+                <div className="text-sm text-orange-400">
+                  or click to select a file
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="preview"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="relative"
+              >
+                <video
+                  src={videoPreview}
+                  className="max-h-40 rounded-lg"
+                  controls
+                />
+                <motion.button
+                  onClick={removeVideo}
+                  className="absolute top-2 right-2 p-1 bg-orange-500 bg-opacity-50 rounded-full hover:bg-opacity-75 transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <X className="w-5 h-5 text-white" />
+                </motion.button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
         {videoResolution && (
-          <div className="text-[#0ca678] font-medium">Video Quality: {videoResolution}</div>
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-orange-600 font-medium"
+          >
+            Video Quality: {videoResolution}
+          </motion.div>
         )}
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="video-name" className="text-[#0ca678]">
+            <Label htmlFor="video-name" className="text-orange-600">
               Video Name
             </Label>
             <Input
               id="video-name"
               placeholder="Enter video name"
-              className="border-[#12b886] text-[#0ca678]"
+              className="border-orange-200 text-orange-600 focus:ring-orange-400"
               disabled={!videoFile}
               value={videoName || ""}
               onChange={(e) => setVideoName(e.target.value)}
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="video-resolution" className="text-[#0ca678]">
+            <Label htmlFor="video-resolution" className="text-orange-600">
               Video Resolution (Current Video)
             </Label>
             <Input
               id="video-resolution"
               value={videoResolution || "N/A"}
-              className="border-[#12b886] text-[#0ca678] bg-white"
+              className="border-orange-200 text-orange-600 bg-white"
               readOnly
             />
           </div>
         </div>
         <div className="flex gap-2">
           <Button
-            className="bg-[#0ca678] text-white hover:bg-[#12b886]"
+            className="bg-gradient-to-r from-orange-400 to-orange-600 text-white hover:from-orange-500 hover:to-orange-700"
             onClick={submitVideo}
             disabled={!videoFile || loading}
           >
@@ -199,13 +226,21 @@ const UploadVideoArea = () => {
           </Button>
           <Button
             variant="outline"
-            className="border-[#12b886] text-[#0ca678] hover:bg-[#e6fcf5]"
+            className="border-orange-400 text-orange-600 hover:bg-orange-50"
             onClick={removeVideo}
           >
             Clear
           </Button>
         </div>
-
+        {loading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="w-full"
+          >
+            <Progress value={percentage} className="w-full" />
+          </motion.div>
+        )}
       </CardContent>
     </Card>
   );
